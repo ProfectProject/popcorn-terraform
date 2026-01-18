@@ -4,7 +4,7 @@ Popcorn 프로젝트의 AWS 인프라를 Terraform으로 관리합니다.
 
 ## 요구사항
 - Terraform >= 1.4.0
-- AWS CLI (AssumeRole 프로파일 설정 필요)
+- AWS CLI >= 2.0 (AssumeRole 프로파일 설정 필요)
 
 ## 구조
 - `bootstrap/` : Terraform backend용 S3 + DynamoDB 생성
