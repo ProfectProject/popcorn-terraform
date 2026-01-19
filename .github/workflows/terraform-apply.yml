@@ -51,37 +51,22 @@ jobs:
           BRANCH: ${{ github.ref_name }}
           ENV_NAME: ${{ env.ENV_NAME }}
         run: |
-          python - <<'PY'
-          import json
-          import os
-          import urllib.request
+          if [[ -z "$DISCORD_WEBHOOK_URL" ]]; then
+            echo "DISCORD_WEBHOOK_URL is not set; skipping Discord notification."
+            exit 0
+          fi
 
-          webhook_url = os.environ.get("DISCORD_WEBHOOK_URL", "")
-          if not webhook_url:
-              print("DISCORD_WEBHOOK_URL is not set; skipping Discord notification.")
-              raise SystemExit(0)
+          payload=$(jq -n \
+            --arg status "$JOB_STATUS" \
+            --arg env "$ENV_NAME" \
+            --arg repo "$REPO" \
+            --arg branch "$BRANCH" \
+            --arg run_url "$RUN_URL" \
+            --arg actor "$ACTOR" \
+            '{
+              "content": "[Terraform apply] \($status) (\($env))\nRepo: \($repo)\nBranch: \($branch)\nRun: \($run_url)\nActor: \($actor)"
+            }')
 
-          status = os.environ.get("JOB_STATUS", "unknown")
-          env_name = os.environ.get("ENV_NAME", "unknown")
-          run_url = os.environ.get("RUN_URL", "")
-          repo = os.environ.get("REPO", "")
-          actor = os.environ.get("ACTOR", "")
-          branch = os.environ.get("BRANCH", "")
-
-          lines = [
-              f"[Terraform apply] {status} ({env_name})",
-              f"Repo: {repo}",
-              f"Branch: {branch}",
-              f"Run: {run_url}",
-              f"Actor: {actor}",
-          ]
-          payload = json.dumps({"content": "\n".join(lines)}).encode("utf-8")
-
-          req = urllib.request.Request(
-              webhook_url,
-              data=payload,
-              headers={"Content-Type": "application/json"},
-          )
-          with urllib.request.urlopen(req) as resp:
-              resp.read()
-          PY
+          curl -H "Content-Type: application/json" \
+            -X POST -d "$payload" \
+            "$DISCORD_WEBHOOK_URL"
