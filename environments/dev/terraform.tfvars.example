@@ -1,0 +1,28 @@
+# AWS Configuration
+aws_region   = "ap-northeast-2"
+project_name = "goorm-popcorn"
+environment  = "dev"
+
+# SSL Certificate ARN (from ACM) - staging과 동일한 인증서 사용 가능
+certificate_arn = "arn:aws:acm:ap-northeast-2:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+
+# ECR Repository URL
+ecr_repository_url = "123456789012.dkr.ecr.ap-northeast-2.amazonaws.com"
+
+# Network Configuration - 개발용 별도 CIDR
+vpc_cidr                     = "10.1.0.0/16"
+public_subnet_cidrs          = ["10.1.1.0/24"]
+private_app_subnet_cidrs     = ["10.1.11.0/24"]
+private_data_subnet_cidrs    = ["10.1.21.0/24"]
+
+# 비용 절감 옵션
+enable_nat_gateway    = true   # 외부 API 호출이 필요하면 true
+enable_vpc_endpoints  = false  # 개발환경에서는 비용 절감
+
+# Database Configuration - 최소 사양
+database_name         = "goorm_popcorn_dev"
+aurora_instance_class = "db.t4g.medium"  # 작은 인스턴스
+aurora_instance_count = 1                # Writer만
+
+# Cache Configuration - 최소 사양
+elasticache_node_type = "cache.t4g.micro"  # 가장 작은 인스턴스
