@@ -26,11 +26,11 @@ resource "aws_route53_record" "validation" {
     }
   }
 
-  zone_id = aws_route53_zone.this.zone_id
-  name    = each.value.name
-  type    = each.value.type
-  ttl     = 60
-  records = [each.value.record]
+  zone_id         = aws_route53_zone.this.zone_id
+  name            = each.value.name
+  type            = each.value.type
+  ttl             = 60
+  records         = [each.value.record]
   allow_overwrite = true
 }
 
