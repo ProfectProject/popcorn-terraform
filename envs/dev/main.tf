@@ -64,3 +64,16 @@ module "security_groups" {
   name   = "goorm-popcorn"
   vpc_id = module.vpc.vpc_id
 }
+
+module "ecr" {
+  source = "../../modules/ecr"
+
+  repositories = [
+    "goorm-popcorn-order",
+    "goorm-popcorn-order-query",
+    "goorm-popcorn-payment",
+    "goorm-popcorn-qr",
+    "goorm-popcorn-store",
+    "goorm-popcorn-user",
+  ]
+}
