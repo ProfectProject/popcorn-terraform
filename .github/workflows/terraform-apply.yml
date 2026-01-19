@@ -1,0 +1,41 @@
+name: terraform-apply
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ap-northeast-2
+  ENV_NAME: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+  ENV_DIR: ${{ github.ref_name == 'main' && 'envs/prod' || 'envs/dev' }}
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    environment: ${{ env.ENV_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform init
+        run: terraform init
+        working-directory: ${{ env.ENV_DIR }}
+
+      - name: Terraform apply
+        run: terraform apply -auto-approve
+        working-directory: ${{ env.ENV_DIR }}
