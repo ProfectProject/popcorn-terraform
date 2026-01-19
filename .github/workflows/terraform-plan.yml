@@ -66,3 +66,35 @@ jobs:
               issue_number: context.issue.number,
               body
             });
+
+      - name: Notify Discord
+        if: ${{ always() }}
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          JOB_STATUS: ${{ job.status }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          if [[ -z "$DISCORD_WEBHOOK_URL" ]]; then
+            echo "DISCORD_WEBHOOK_URL is not set; skipping Discord notification."
+            exit 0
+          fi
+
+          payload=$(jq -n \
+            --arg status "$JOB_STATUS" \
+            --arg env "$ENV_NAME" \
+            --arg repo "$REPO" \
+            --arg pr_number "$PR_NUMBER" \
+            --arg pr_url "$PR_URL" \
+            --arg run_url "$RUN_URL" \
+            --arg actor "$ACTOR" \
+            '{
+              "content": "[Terraform plan] \($status) (\($env))\nRepo: \($repo)\nPR: #\($pr_number) \($pr_url)\nRun: \($run_url)\nActor: \($actor)"
+            }')
+
+          curl -H "Content-Type: application/json" \
+            -X POST -d "$payload" \
+            "$DISCORD_WEBHOOK_URL"

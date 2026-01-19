@@ -12,6 +12,7 @@ permissions:
 
 env:
   AWS_REGION: ap-northeast-2
+  ENV_NAME: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
   ENV_DIR: ${{ github.ref_name == 'main' && 'envs/prod' || 'envs/dev' }}
 
 jobs:
@@ -38,3 +39,34 @@ jobs:
       - name: Terraform apply
         run: terraform apply -auto-approve
         working-directory: ${{ env.ENV_DIR }}
+
+      - name: Notify Discord
+        if: ${{ always() }}
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          JOB_STATUS: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+          BRANCH: ${{ github.ref_name }}
+          ENV_NAME: ${{ env.ENV_NAME }}
+        run: |
+          if [[ -z "$DISCORD_WEBHOOK_URL" ]]; then
+            echo "DISCORD_WEBHOOK_URL is not set; skipping Discord notification."
+            exit 0
+          fi
+
+          payload=$(jq -n \
+            --arg status "$JOB_STATUS" \
+            --arg env "$ENV_NAME" \
+            --arg repo "$REPO" \
+            --arg branch "$BRANCH" \
+            --arg run_url "$RUN_URL" \
+            --arg actor "$ACTOR" \
+            '{
+              "content": "[Terraform apply] \($status) (\($env))\nRepo: \($repo)\nBranch: \($branch)\nRun: \($run_url)\nActor: \($actor)"
+            }')
+
+          curl -H "Content-Type: application/json" \
+            -X POST -d "$payload" \
+            "$DISCORD_WEBHOOK_URL"
