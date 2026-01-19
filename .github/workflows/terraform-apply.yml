@@ -41,7 +41,7 @@ jobs:
         working-directory: ${{ env.ENV_DIR }}
 
       - name: Notify Discord
-        if: ${{ always() && secrets.DISCORD_WEBHOOK_URL }}
+        if: ${{ always() }}
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           JOB_STATUS: ${{ job.status }}
@@ -55,6 +55,11 @@ jobs:
           import json
           import os
           import urllib.request
+
+          webhook_url = os.environ.get("DISCORD_WEBHOOK_URL", "")
+          if not webhook_url:
+              print("DISCORD_WEBHOOK_URL is not set; skipping Discord notification.")
+              raise SystemExit(0)
 
           status = os.environ.get("JOB_STATUS", "unknown")
           env_name = os.environ.get("ENV_NAME", "unknown")
@@ -73,7 +78,7 @@ jobs:
           payload = json.dumps({"content": "\n".join(lines)}).encode("utf-8")
 
           req = urllib.request.Request(
-              os.environ["DISCORD_WEBHOOK_URL"],
+              webhook_url,
               data=payload,
               headers={"Content-Type": "application/json"},
           )
