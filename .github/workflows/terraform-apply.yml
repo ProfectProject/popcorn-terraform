@@ -12,13 +12,12 @@ permissions:
 
 env:
   AWS_REGION: ap-northeast-2
-  ENV_NAME: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
   ENV_DIR: ${{ github.ref_name == 'main' && 'envs/prod' || 'envs/dev' }}
 
 jobs:
   apply:
     runs-on: ubuntu-latest
-    environment: ${{ env.ENV_NAME }}
+    environment: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
     steps:
       - uses: actions/checkout@v4
 
