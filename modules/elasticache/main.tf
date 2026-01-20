@@ -11,9 +11,28 @@ resource "aws_elasticache_parameter_group" "main" {
   family = "redis7"
   name   = "${var.project_name}-redis-params"
 
+  # 메모리 정책 - LRU로 오래된 키 제거
   parameter {
     name  = "maxmemory-policy"
     value = "allkeys-lru"
+  }
+
+  # TTL 관리를 위한 키 만료 최적화
+  parameter {
+    name  = "lazyfree-lazy-expire"
+    value = "yes"
+  }
+
+  # 백그라운드 저장 최적화
+  parameter {
+    name  = "save"
+    value = "900 1 300 10 60 10000"
+  }
+
+  # 재고 수량 등 빈번한 업데이트를 위한 최적화
+  parameter {
+    name  = "tcp-keepalive"
+    value = "300"
   }
 
   tags = var.tags

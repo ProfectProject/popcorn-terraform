@@ -186,6 +186,16 @@ variable "services" {
   }
 }
 
+variable "elasticache_primary_endpoint" {
+  description = "ElastiCache primary endpoint"
+  type        = string
+}
+
+variable "elasticache_reader_endpoint" {
+  description = "ElastiCache reader endpoint"
+  type        = string
+}
+
 variable "tags" {
   description = "A map of tags to assign to the resource"
   type        = map(string)

@@ -84,7 +84,20 @@ resource "aws_ecs_task_definition" "services" {
         }
       ]
 
-      environment = each.value.environment_variables
+      environment = concat(each.value.environment_variables, [
+        {
+          name  = "REDIS_PRIMARY_ENDPOINT"
+          value = var.elasticache_primary_endpoint
+        },
+        {
+          name  = "REDIS_READER_ENDPOINT" 
+          value = var.elasticache_reader_endpoint
+        },
+        {
+          name  = "REDIS_PORT"
+          value = "6379"
+        }
+      ])
 
       secrets = [
         {

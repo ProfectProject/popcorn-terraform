@@ -20,5 +20,8 @@ database_name        = "goorm_popcorn_prod"
 master_username      = "postgres"
 aurora_instance_count = 3
 
-# Cache Configuration
-elasticache_node_type = "cache.t4g.small"
+# Cache Configuration - Multi-AZ 구성
+elasticache_node_type = "cache.r7g.large"
+elasticache_num_cache_clusters = 3  # Primary + 2 Replicas
+elasticache_multi_az_enabled = true
+elasticache_automatic_failover_enabled = true
