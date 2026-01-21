@@ -12,5 +12,5 @@ override.tf.json
 terraform.rc
 *.tfvars
 *.tfvars.json
-!envs/*/terraform.tfvars
-!envs/*/terraform.tfvars.json
+!envs/*/terraform.tfvars.example
+!envs/*/terraform.tfvars.json.example

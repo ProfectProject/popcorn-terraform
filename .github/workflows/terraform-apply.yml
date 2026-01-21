@@ -26,6 +26,17 @@ jobs:
         with:
           terraform_version: 1.6.6
 
+      - name: Prepare terraform.tfvars
+        env:
+          TFVARS_CONTENT: ${{ secrets[format('TFVARS_%s', env.ENV_NAME)] }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${TFVARS_CONTENT:-}" ]]; then
+            printf "%s" "$TFVARS_CONTENT" > "${ENV_DIR}/terraform.tfvars"
+          elif [[ -f "${ENV_DIR}/terraform.tfvars.example" ]]; then
+            cp "${ENV_DIR}/terraform.tfvars.example" "${ENV_DIR}/terraform.tfvars"
+          fi
+
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:

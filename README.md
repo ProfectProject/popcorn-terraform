@@ -24,13 +24,13 @@ Terraform과 Provider 버전은 모든 스택에서 동일하게 고정하고,
 │   │   ├── backend.tf
 │   │   ├── main.tf
 │   │   ├── variables.tf
-│   │   ├── terraform.tfvars
+│   │   ├── terraform.tfvars.example
 │   │   └── versions.tf
 │   └── prod
 │       ├── backend.tf
 │       ├── main.tf
 │       ├── variables.tf
-│       ├── terraform.tfvars
+│       ├── terraform.tfvars.example
 │       └── versions.tf
 ├── global
 │   ├── ecr
@@ -53,6 +53,7 @@ Terraform과 Provider 버전은 모든 스택에서 동일하게 고정하고,
 ```
 
 환경별 값은 `variables.tf`로 선언하고 `terraform.tfvars`에서 주입합니다.
+예시는 `terraform.tfvars.example`에 두고, 실제 실행 시 `terraform.tfvars`로 복사합니다.
 
 ## 주요 특징
 - 모듈화: 재사용 가능한 모듈 구조
@@ -71,6 +72,13 @@ Terraform과 Provider 버전은 모든 스택에서 동일하게 고정하고,
 - PR(`develop`/`main`)에서 `terraform plan` 실행 후 PR 코멘트로 출력
 - `develop` 머지 시 dev 환경 `terraform apply`
 - `main` 머지 시 prod 환경 `terraform apply`
+- Discord Webhook으로 plan/apply 결과 알림 전송
+
+## tfvars 운영 방식 (CI 포함)
+- `terraform.tfvars.example`만 커밋
+- 로컬 실행 시 `terraform.tfvars.example`을 `terraform.tfvars`로 복사
+- CI는 `TFVARS_DEV` / `TFVARS_PROD` Secret이 있으면 해당 값으로 `terraform.tfvars` 생성
+- Secret이 없으면 `terraform.tfvars.example`을 복사해서 실행
 
 ## Terraform backend 구성
 1) backend 리소스 생성 (최초 1회)
@@ -106,6 +114,7 @@ terraform apply
 2) dev 스택
 ```bash
 cd envs/dev
+cp terraform.tfvars.example terraform.tfvars
 terraform init
 terraform plan
 terraform apply
@@ -114,6 +123,7 @@ terraform apply
 3) prod 스택
 ```bash
 cd envs/prod
+cp terraform.tfvars.example terraform.tfvars
 terraform init
 terraform plan
 terraform apply
