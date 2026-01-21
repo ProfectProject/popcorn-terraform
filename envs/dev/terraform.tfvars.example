@@ -1,14 +1,14 @@
-vpc_name = "goorm-popcorn-vpc"
+vpc_name = "goorm-popcorn-vpc-dev"
 vpc_cidr = "10.0.0.0/16"
 
 public_subnets = [
   {
-    name = "public-2a"
+    name = "goorm-popcorn-dev-public-2a"
     az   = "ap-northeast-2a"
     cidr = "10.0.1.0/24"
   },
   {
-    name = "public-2c"
+    name = "goorm-popcorn-dev-public-2c"
     az   = "ap-northeast-2c"
     cidr = "10.0.2.0/24"
   }
@@ -16,12 +16,12 @@ public_subnets = [
 
 app_subnets = [
   {
-    name = "private-app-2a"
+    name = "goorm-popcorn-dev-private-app-2a"
     az   = "ap-northeast-2a"
     cidr = "10.0.11.0/24"
   },
   {
-    name = "private-app-2c"
+    name = "goorm-popcorn-dev-private-app-2c"
     az   = "ap-northeast-2c"
     cidr = "10.0.12.0/24"
   }
@@ -29,18 +29,18 @@ app_subnets = [
 
 data_subnets = [
   {
-    name = "private-data-2a"
+    name = "goorm-popcorn-dev-private-data-2a"
     az   = "ap-northeast-2a"
     cidr = "10.0.21.0/24"
   },
   {
-    name = "private-data-2c"
+    name = "goorm-popcorn-dev-private-data-2c"
     az   = "ap-northeast-2c"
     cidr = "10.0.22.0/24"
   }
 ]
 
-sg_name = "goorm-popcorn"
+sg_name = "goorm-popcorn-dev"
 
 enable_nat         = true
 single_nat_gateway = true
