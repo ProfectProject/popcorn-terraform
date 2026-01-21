@@ -10,7 +10,7 @@ resource "aws_security_group" "alb" {
   ingress                = []
   egress                 = []
 
-  tags = merge(local.base_tags, { Name = "sg-alb" })
+  tags = merge(local.base_tags, { Name = "${var.name}-sg-alb" })
 }
 
 resource "aws_security_group" "ecs" {
@@ -21,7 +21,7 @@ resource "aws_security_group" "ecs" {
   ingress                = []
   egress                 = []
 
-  tags = merge(local.base_tags, { Name = "sg-ecs" })
+  tags = merge(local.base_tags, { Name = "${var.name}-sg-ecs" })
 }
 
 resource "aws_security_group" "db" {
@@ -32,7 +32,7 @@ resource "aws_security_group" "db" {
   ingress                = []
   egress                 = []
 
-  tags = merge(local.base_tags, { Name = "sg-db" })
+  tags = merge(local.base_tags, { Name = "${var.name}-sg-db" })
 }
 
 resource "aws_security_group" "cache" {
@@ -43,7 +43,7 @@ resource "aws_security_group" "cache" {
   ingress                = []
   egress                 = []
 
-  tags = merge(local.base_tags, { Name = "sg-cache" })
+  tags = merge(local.base_tags, { Name = "${var.name}-sg-cache" })
 }
 
 resource "aws_security_group" "kafka" {
@@ -54,7 +54,7 @@ resource "aws_security_group" "kafka" {
   ingress                = []
   egress                 = []
 
-  tags = merge(local.base_tags, { Name = "sg-kafka" })
+  tags = merge(local.base_tags, { Name = "${var.name}-sg-kafka" })
 }
 
 resource "aws_security_group_rule" "alb_ingress_http" {
