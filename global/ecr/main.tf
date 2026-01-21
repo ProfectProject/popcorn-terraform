@@ -9,6 +9,7 @@ module "ecr" {
     "goorm-popcorn-order",
     "goorm-popcorn-order-query",
     "goorm-popcorn-payment",
+    "goorm-popcorn-api-gateway",
     "goorm-popcorn-qr",
     "goorm-popcorn-store",
     "goorm-popcorn-user",
