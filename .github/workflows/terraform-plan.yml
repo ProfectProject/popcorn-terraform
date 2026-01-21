@@ -26,6 +26,9 @@ jobs:
         with:
           terraform_version: 1.6.6
 
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+
       - name: Prepare terraform.tfvars
         env:
           TFVARS_CONTENT: ${{ secrets[format('TFVARS_%s', env.ENV_NAME)] }}
@@ -42,9 +45,6 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-
-      - name: Terraform fmt
-        run: terraform fmt -check -recursive
 
       - name: Terraform init
         run: terraform init
