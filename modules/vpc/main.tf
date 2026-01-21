@@ -92,6 +92,13 @@ resource "aws_route_table_association" "app" {
   route_table_id = aws_route_table.app.id
 }
 
+resource "aws_route" "app_nat" {
+  for_each               = var.nat_gateway_ids
+  route_table_id         = aws_route_table.app.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = each.value
+}
+
 resource "aws_route_table_association" "data" {
   for_each       = aws_subnet.data
   subnet_id      = each.value.id

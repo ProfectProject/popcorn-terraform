@@ -38,3 +38,8 @@ variable "data_subnets" {
 variable "sg_name" {
   type = string
 }
+
+variable "nat_azs" {
+  type    = list(string)
+  default = []
+}

@@ -30,6 +30,11 @@ variable "data_subnets" {
   }))
 }
 
+variable "nat_gateway_ids" {
+  type    = map(string)
+  default = {}
+}
+
 variable "tags" {
   type    = map(string)
   default = {}
