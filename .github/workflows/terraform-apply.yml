@@ -57,9 +57,6 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           JOB_STATUS: ${{ job.status }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          REPO: ${{ github.repository }}
-          ACTOR: ${{ github.actor }}
-          BRANCH: ${{ github.ref_name }}
           ENV_NAME: ${{ env.ENV_NAME }}
         run: |
           if [[ -z "$DISCORD_WEBHOOK_URL" ]]; then
@@ -67,15 +64,21 @@ jobs:
             exit 0
           fi
 
+          if [[ "$JOB_STATUS" == "success" ]]; then
+            emoji="✅"
+            status_label="성공"
+          else
+            emoji="❌"
+            status_label="실패"
+          fi
+
           payload=$(jq -n \
-            --arg status "$JOB_STATUS" \
+            --arg emoji "$emoji" \
+            --arg status "$status_label" \
             --arg env "$ENV_NAME" \
-            --arg repo "$REPO" \
-            --arg branch "$BRANCH" \
             --arg run_url "$RUN_URL" \
-            --arg actor "$ACTOR" \
             '{
-              "content": "[Terraform apply] \($status) (\($env))\nRepo: \($repo)\nBranch: \($branch)\nRun: \($run_url)\nActor: \($actor)"
+              "content": "\($emoji) Terraform apply (\($env)) \($status) - \($run_url)"
             }')
 
           curl -H "Content-Type: application/json" \
