@@ -106,7 +106,7 @@ jobs:
             --arg pr_title "$PR_TITLE" \
             --arg pr_branch "$PR_BRANCH" \
             '{
-              "content": "\($emoji) Terraform plan (\($env)) \($status) - PR: \($pr_title) - Branch: \($pr_branch)"
+              "content": "\($emoji) Terraform plan (\($env)) \($status)\nPR: \($pr_title)\nBranch: \($pr_branch)"
             }')
 
           curl -H "Content-Type: application/json" \

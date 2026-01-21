@@ -78,7 +78,7 @@ jobs:
             --arg env "$ENV_NAME" \
             --arg branch "$BRANCH" \
             '{
-              "content": "\($emoji) Terraform apply (\($env)) \($status) - Branch: \($branch)"
+              "content": "\($emoji) Terraform apply (\($env)) \($status)\nBranch: \($branch)"
             }')
 
           curl -H "Content-Type: application/json" \
