@@ -48,3 +48,21 @@ variable "single_nat_gateway" {
   type    = bool
   default = false
 }
+
+variable "alb_name" {
+  type = string
+}
+
+variable "alb_target_group_name" {
+  type = string
+}
+
+variable "alb_target_group_port" {
+  type    = number
+  default = 8080
+}
+
+variable "alb_health_check_path" {
+  type    = string
+  default = "/health"
+}
