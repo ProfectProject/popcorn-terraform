@@ -12,19 +12,19 @@ resource "aws_elasticache_subnet_group" "this" {
 }
 
 resource "aws_elasticache_replication_group" "this" {
-  replication_group_id          = local.replication_group_id
-  description                   = "Redis replication group for ${var.name}"
-  engine                        = "redis"
-  engine_version                = var.engine_version
-  node_type                     = var.node_type
-  num_cache_clusters            = var.num_cache_clusters
-  port                          = var.port
-  subnet_group_name             = aws_elasticache_subnet_group.this.name
-  security_group_ids            = [var.security_group_id]
-  automatic_failover_enabled    = local.enable_failover
-  multi_az_enabled              = local.enable_multi_az
-  at_rest_encryption_enabled    = var.at_rest_encryption_enabled
-  transit_encryption_enabled    = var.transit_encryption_enabled
+  replication_group_id       = local.replication_group_id
+  description                = "Redis replication group for ${var.name}"
+  engine                     = "redis"
+  engine_version             = var.engine_version
+  node_type                  = var.node_type
+  num_cache_clusters         = var.num_cache_clusters
+  port                       = var.port
+  subnet_group_name          = aws_elasticache_subnet_group.this.name
+  security_group_ids         = [var.security_group_id]
+  automatic_failover_enabled = local.enable_failover
+  multi_az_enabled           = local.enable_multi_az
+  at_rest_encryption_enabled = var.at_rest_encryption_enabled
+  transit_encryption_enabled = var.transit_encryption_enabled
 
   tags = merge(var.tags, { Name = var.name })
 }
