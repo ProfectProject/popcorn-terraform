@@ -1,79 +1,20 @@
-terraform {
-  required_version = ">= 1.4.0"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
-
 provider "aws" {
-  region = "ap-northeast-2"
+  region = var.region
 }
 
 module "vpc" {
   source = "../../modules/vpc"
 
-  name = "goorm-popcorn-vpc"
-  cidr = "10.0.0.0/16"
-
-  public_subnets = [
-    {
-      name = "public-2a"
-      az   = "ap-northeast-2a"
-      cidr = "10.0.1.0/24"
-    },
-    {
-      name = "public-2c"
-      az   = "ap-northeast-2c"
-      cidr = "10.0.2.0/24"
-    }
-  ]
-
-  app_subnets = [
-    {
-      name = "private-app-2a"
-      az   = "ap-northeast-2a"
-      cidr = "10.0.11.0/24"
-    },
-    {
-      name = "private-app-2c"
-      az   = "ap-northeast-2c"
-      cidr = "10.0.12.0/24"
-    }
-  ]
-
-  data_subnets = [
-    {
-      name = "private-data-2a"
-      az   = "ap-northeast-2a"
-      cidr = "10.0.21.0/24"
-    },
-    {
-      name = "private-data-2c"
-      az   = "ap-northeast-2c"
-      cidr = "10.0.22.0/24"
-    }
-  ]
+  name           = var.vpc_name
+  cidr           = var.vpc_cidr
+  public_subnets = var.public_subnets
+  app_subnets    = var.app_subnets
+  data_subnets   = var.data_subnets
 }
 
 module "security_groups" {
   source = "../../modules/security-groups"
 
-  name   = "goorm-popcorn"
+  name   = var.sg_name
   vpc_id = module.vpc.vpc_id
-}
-
-module "ecr" {
-  source = "../../modules/ecr"
-
-  repositories = [
-    "goorm-popcorn-order",
-    "goorm-popcorn-order-query",
-    "goorm-popcorn-payment",
-    "goorm-popcorn-qr",
-    "goorm-popcorn-store",
-    "goorm-popcorn-user",
-  ]
 }
