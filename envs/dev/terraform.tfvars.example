@@ -41,3 +41,6 @@ data_subnets = [
 ]
 
 sg_name = "goorm-popcorn"
+
+enable_nat         = true
+single_nat_gateway = true

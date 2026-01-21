@@ -38,3 +38,13 @@ variable "data_subnets" {
 variable "sg_name" {
   type = string
 }
+
+variable "enable_nat" {
+  type    = bool
+  default = false
+}
+
+variable "single_nat_gateway" {
+  type    = bool
+  default = false
+}
