@@ -34,7 +34,14 @@ Terraform과 Provider 버전은 모든 스택에서 동일하게 고정하고,
 │       └── versions.tf
 ├── global
 │   ├── ecr
+│   │   ├── backend.tf
+│   │   ├── main.tf
+│   │   └── versions.tf
 │   └── route53-acm
+│       ├── backend.tf
+│       ├── main.tf
+│       ├── outputs.tf
+│       └── versions.tf
 ├── modules
 │   ├── vpc
 │   ├── security-groups
@@ -49,7 +56,7 @@ Terraform과 Provider 버전은 모든 스택에서 동일하게 고정하고,
 │   └── iam
 ├── templates
 │   └── versions.tf
-└── docs
+└── README.md
 ```
 
 환경별 값은 `variables.tf`로 선언하고 `terraform.tfvars`에서 주입합니다.
@@ -67,8 +74,10 @@ Terraform과 Provider 버전은 모든 스택에서 동일하게 고정하고,
 - NAT Gateway (dev 단일, prod 멀티)
 - NAT는 VPC 모듈 내부에서 관리
 - Security Group (ALB/ECS/DB/Cache/Kafka)
+- ALB (HTTP -> HTTPS 리다이렉트, API Gateway 대상 TG)
 - ECR 레포지토리
 - Route53 Hosted Zone + ACM 인증서 (global)
+  - `envs/*`는 `terraform_remote_state`로 ACM ARN을 참조
 
 ## GitHub Actions (CI/CD)
 - PR(`develop`/`main`)에서 `terraform plan` 실행 후 PR 코멘트로 출력
