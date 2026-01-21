@@ -83,27 +83,30 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           JOB_STATUS: ${{ job.status }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          REPO: ${{ github.repository }}
-          ACTOR: ${{ github.actor }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
           if [[ -z "$DISCORD_WEBHOOK_URL" ]]; then
             echo "DISCORD_WEBHOOK_URL is not set; skipping Discord notification."
             exit 0
           fi
 
+          if [[ "$JOB_STATUS" == "success" ]]; then
+            emoji="✅"
+            status_label="성공"
+          else
+            emoji="❌"
+            status_label="실패"
+          fi
+
           payload=$(jq -n \
-            --arg status "$JOB_STATUS" \
+            --arg emoji "$emoji" \
+            --arg status "$status_label" \
             --arg env "$ENV_NAME" \
-            --arg repo "$REPO" \
-            --arg pr_number "$PR_NUMBER" \
-            --arg pr_url "$PR_URL" \
-            --arg run_url "$RUN_URL" \
-            --arg actor "$ACTOR" \
+            --arg pr_title "$PR_TITLE" \
+            --arg pr_branch "$PR_BRANCH" \
             '{
-              "content": "[Terraform plan] \($status) (\($env))\nRepo: \($repo)\nPR: #\($pr_number) \($pr_url)\nRun: \($run_url)\nActor: \($actor)"
+              "content": "\($emoji) Terraform plan (\($env)) \($status)\nPR: \($pr_title)\nBranch: \($pr_branch)"
             }')
 
           curl -H "Content-Type: application/json" \
