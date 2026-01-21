@@ -39,7 +39,12 @@ variable "sg_name" {
   type = string
 }
 
-variable "nat_azs" {
-  type    = list(string)
-  default = []
+variable "enable_nat" {
+  type    = bool
+  default = false
+}
+
+variable "single_nat_gateway" {
+  type    = bool
+  default = false
 }

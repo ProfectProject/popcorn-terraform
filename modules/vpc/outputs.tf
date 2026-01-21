@@ -21,7 +21,14 @@ output "data_subnet_ids" {
 output "route_table_ids" {
   value = {
     public = aws_route_table.public.id
-    app    = aws_route_table.app.id
+    app    = { for name, rt in aws_route_table.app : name => rt.id }
     data   = aws_route_table.data.id
+  }
+}
+
+output "private_route_table_ids" {
+  value = {
+    for name, subnet in aws_subnet.app :
+    subnet.availability_zone => aws_route_table.app[name].id
   }
 }

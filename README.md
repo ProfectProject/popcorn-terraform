@@ -64,6 +64,8 @@ Terraform과 Provider 버전은 모든 스택에서 동일하게 고정하고,
 
 ## 현재 구성된 리소스 (코드 기준)
 - VPC 및 서브넷 (3-Tier)
+- NAT Gateway (dev 단일, prod 멀티)
+- NAT는 VPC 모듈 내부에서 관리
 - Security Group (ALB/ECS/DB/Cache/Kafka)
 - ECR 레포지토리
 - Route53 Hosted Zone + ACM 인증서 (global)
