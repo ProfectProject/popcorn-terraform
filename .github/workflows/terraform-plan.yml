@@ -83,7 +83,8 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           JOB_STATUS: ${{ job.status }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
           if [[ -z "$DISCORD_WEBHOOK_URL" ]]; then
             echo "DISCORD_WEBHOOK_URL is not set; skipping Discord notification."
@@ -102,9 +103,10 @@ jobs:
             --arg emoji "$emoji" \
             --arg status "$status_label" \
             --arg env "$ENV_NAME" \
-            --arg run_url "$RUN_URL" \
+            --arg pr_title "$PR_TITLE" \
+            --arg pr_branch "$PR_BRANCH" \
             '{
-              "content": "\($emoji) Terraform plan (\($env)) \($status) - \($run_url)"
+              "content": "\($emoji) Terraform plan (\($env)) \($status) - PR: \($pr_title) - Branch: \($pr_branch)"
             }')
 
           curl -H "Content-Type: application/json" \
