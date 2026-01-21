@@ -47,3 +47,10 @@ single_nat_gateway = true
 
 alb_name              = "goorm-popcorn-alb-dev"
 alb_target_group_name = "goorm-popcorn-gateway-dev"
+
+elasticache_name                = "goorm-popcorn-cache-dev"
+elasticache_node_type           = "cache.t4g.micro"
+elasticache_engine_version      = "7.0"
+elasticache_num_cache_clusters  = 1
+elasticache_automatic_failover  = false
+elasticache_multi_az_enabled    = false

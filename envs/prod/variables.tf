@@ -66,3 +66,32 @@ variable "alb_health_check_path" {
   type    = string
   default = "/health"
 }
+
+variable "elasticache_name" {
+  type = string
+}
+
+variable "elasticache_node_type" {
+  type    = string
+  default = "cache.t4g.small"
+}
+
+variable "elasticache_engine_version" {
+  type    = string
+  default = "7.0"
+}
+
+variable "elasticache_num_cache_clusters" {
+  type    = number
+  default = 2
+}
+
+variable "elasticache_automatic_failover" {
+  type    = bool
+  default = true
+}
+
+variable "elasticache_multi_az_enabled" {
+  type    = bool
+  default = true
+}

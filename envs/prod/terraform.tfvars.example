@@ -47,3 +47,10 @@ single_nat_gateway = false
 
 alb_name              = "goorm-popcorn-alb-prod"
 alb_target_group_name = "goorm-popcorn-gateway-prod"
+
+elasticache_name                = "goorm-popcorn-cache-prod"
+elasticache_node_type           = "cache.t4g.small"
+elasticache_engine_version      = "7.0"
+elasticache_num_cache_clusters  = 2
+elasticache_automatic_failover  = true
+elasticache_multi_az_enabled    = true
