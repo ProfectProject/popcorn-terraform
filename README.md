@@ -13,53 +13,43 @@ Terraform과 Provider 버전은 모든 스택에서 동일하게 고정하고,
 
 ## 디렉토리 구조
 ```
-bootstrap/           # Terraform backend용 S3 + DynamoDB 생성
-  main.tf
-  variables.tf
-  outputs.tf
-  versions.tf
-
-envs/                # 환경별 스택
-  dev/
-    backend.tf
-    main.tf
-    variables.tf
-    terraform.tfvars
-    versions.tf
-  prod/
-    backend.tf
-    main.tf
-    variables.tf
-    terraform.tfvars
-    versions.tf
-
-modules/             # 재사용 모듈
-  vpc/                # VPC 및 네트워크 구성
-  security-groups/    # 계층형 Security Group
-  ecr/                # ECR 레포지토리
-  route53-acm/        # Route53 Hosted Zone + ACM 인증서
-  alb/                # Application Load Balancer
-  ecs/                # ECS 클러스터/서비스
-  rds/                # Aurora PostgreSQL
-  elasticache/        # ElastiCache Redis
-  msk/                # Amazon MSK
-  cloudmap/           # 서비스 디스커버리
-  iam/                # IAM 역할/정책
-
-global/              # 전역 리소스 (한 번만 생성)
-  route53-acm/
-    backend.tf
-    main.tf
-    versions.tf
-  ecr/
-    backend.tf
-    main.tf
-    versions.tf
-
-templates/           # 공통 템플릿
-  versions.tf
-
-docs/                # 설계/운영 문서
+.
+├── bootstrap
+│   ├── main.tf
+│   ├── outputs.tf
+│   ├── variables.tf
+│   └── versions.tf
+├── envs
+│   ├── dev
+│   │   ├── backend.tf
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   ├── terraform.tfvars
+│   │   └── versions.tf
+│   └── prod
+│       ├── backend.tf
+│       ├── main.tf
+│       ├── variables.tf
+│       ├── terraform.tfvars
+│       └── versions.tf
+├── global
+│   ├── ecr
+│   └── route53-acm
+├── modules
+│   ├── vpc
+│   ├── security-groups
+│   ├── ecr
+│   ├── route53-acm
+│   ├── alb
+│   ├── ecs
+│   ├── rds
+│   ├── elasticache
+│   ├── msk
+│   ├── cloudmap
+│   └── iam
+├── templates
+│   └── versions.tf
+└── docs
 ```
 
 환경별 값은 `variables.tf`로 선언하고 `terraform.tfvars`에서 주입합니다.
