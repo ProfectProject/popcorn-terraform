@@ -22,3 +22,8 @@ output "msk_security_group_id" {
   description = "ID of the MSK security group"
   value       = aws_security_group.msk.id
 }
+
+output "kafka_security_group_id" {
+  description = "ID of the Kafka security group"
+  value       = aws_security_group.kafka.id
+}

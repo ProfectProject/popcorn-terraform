@@ -109,6 +109,12 @@ variable "ecr_repository_url" {
   type        = string
 }
 
+# EC2 Key Pair for Kafka instances
+variable "key_pair_name" {
+  description = "EC2 Key Pair name for SSH access to Kafka instances"
+  type        = string
+}
+
 # ECS Services Configuration
 variable "ecs_services" {
   description = "Configuration for ECS services"

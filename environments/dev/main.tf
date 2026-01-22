@@ -169,15 +169,39 @@ module "elasticache" {
 }
 
 # MSK Module - 개발용으로는 SQS/SNS 대체 고려하지만 일단 MSK Serverless 유지
-module "msk" {
-  source = "../../modules/msk"
+# module "msk" {
+#   source = "../../modules/msk"
 
-  project_name            = var.project_name
-  environment             = var.environment
-  private_app_subnet_ids  = module.vpc.private_app_subnet_ids
-  msk_security_group_id   = module.security_groups.msk_security_group_id
+#   project_name            = var.project_name
+#   environment             = var.environment
+#   private_app_subnet_ids  = module.vpc.private_app_subnet_ids
+#   msk_security_group_id   = module.security_groups.msk_security_group_id
 
-  enable_monitoring       = false  # 모니터링 비활성화
+#   enable_monitoring       = false  # 모니터링 비활성화
+
+#   tags = local.common_tags
+# }
+
+# Kafka KRaft Module - Dev 환경 (단일 노드)
+module "kafka" {
+  source = "../../modules/kafka"
+
+  project_name = var.project_name
+  environment  = var.environment
+
+  node_count    = 1
+  instance_type = "t3.micro"
+  key_pair_name = var.key_pair_name
+
+  subnet_ids        = [module.vpc.private_app_subnet_ids[0]]
+  security_group_id = module.security_groups.kafka_security_group_id
+  private_ips       = ["10.0.11.30"]
+
+  root_volume_size = 8
+  data_volume_size = 20
+  data_volume_iops = 3000
+
+  log_retention_days = 3
 
   tags = local.common_tags
 }

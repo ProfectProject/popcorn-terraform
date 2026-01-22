@@ -1,27 +1,25 @@
-# AWS Configuration
-aws_region   = "ap-northeast-2"
-project_name = "goorm-popcorn"
-environment  = "prod"
+# Production Environment Configuration
 
-# SSL Certificate ARN (from ACM)
-certificate_arn = "arn:aws:acm:ap-northeast-2:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+# SSL Certificate ARN (required)
+certificate_arn = "arn:aws:acm:ap-northeast-2:123456789012:certificate/your-certificate-id"
 
-# ECR Repository URL
-ecr_repository_url = "123456789012.dkr.ecr.ap-northeast-2.amazonaws.com"
+# ECR Repository URL (required)
+ecr_repository_url = "123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/goorm-popcorn"
 
-# Network Configuration
-vpc_cidr                     = "10.0.0.0/16"
-public_subnet_cidrs          = ["10.0.1.0/24", "10.0.2.0/24"]
-private_app_subnet_cidrs     = ["10.0.11.0/24", "10.0.12.0/24"]
-private_data_subnet_cidrs    = ["10.0.21.0/24", "10.0.22.0/24"]
+# EC2 Key Pair for Kafka instances (required)
+key_pair_name = "your-key-pair-name"
 
-# Database Configuration
-database_name        = "goorm_popcorn_prod"
-master_username      = "postgres"
-aurora_instance_count = 3
+# Optional: Override default values
+# project_name = "goorm-popcorn"
+# environment = "prod"
+# aws_region = "ap-northeast-2"
 
-# Cache Configuration - Multi-AZ 구성
-elasticache_node_type = "cache.r7g.large"
-elasticache_num_cache_clusters = 3  # Primary + 2 Replicas
-elasticache_multi_az_enabled = true
-elasticache_automatic_failover_enabled = true
+# VPC Configuration (optional overrides)
+# vpc_cidr = "10.0.0.0/16"
+# public_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24"]
+# private_app_subnet_cidrs = ["10.0.11.0/24", "10.0.12.0/24"]
+# private_data_subnet_cidrs = ["10.0.21.0/24", "10.0.22.0/24"]
+
+# Database Configuration (optional overrides)
+# database_name = "goorm_popcorn_db"
+# master_username = "postgres"

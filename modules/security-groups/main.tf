@@ -49,9 +49,9 @@ resource "aws_security_group" "ecs" {
   }
 
   ingress {
-    description = "MSK IAM"
-    from_port   = 9098
-    to_port     = 9098
+    description = "Kafka broker"
+    from_port   = 9092
+    to_port     = 9092
     protocol    = "tcp"
     self        = true
   }
@@ -131,6 +131,63 @@ resource "aws_security_group" "msk" {
 
   tags = merge(var.tags, {
     Name = "${var.project_name}-msk-sg"
+  })
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# Kafka KRaft Security Group
+resource "aws_security_group" "kafka" {
+  name_prefix = "${var.project_name}-kafka-"
+  vpc_id      = var.vpc_id
+
+  # Kafka broker port from ECS
+  ingress {
+    description     = "Kafka broker from ECS"
+    from_port       = 9092
+    to_port         = 9092
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ecs.id]
+  }
+
+  # Kafka controller port (cluster internal communication)
+  ingress {
+    description = "Kafka controller (cluster internal)"
+    from_port   = 9094
+    to_port     = 9094
+    protocol    = "tcp"
+    self        = true
+  }
+
+  # JMX monitoring port (optional)
+  ingress {
+    description = "JMX monitoring"
+    from_port   = 9999
+    to_port     = 9999
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]  # VPC CIDR
+  }
+
+  # SSH access (optional, for debugging)
+  ingress {
+    description = "SSH access"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]  # VPC CIDR only
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(var.tags, {
+    Name = "${var.project_name}-kafka-sg"
   })
 
   lifecycle {

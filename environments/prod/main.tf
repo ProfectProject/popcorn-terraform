@@ -169,15 +169,39 @@ module "elasticache" {
 }
 
 # MSK Module
-module "msk" {
-  source = "../../modules/msk"
+# module "msk" {
+#   source = "../../modules/msk"
 
-  project_name            = var.project_name
-  environment             = var.environment
-  private_app_subnet_ids  = module.vpc.private_app_subnet_ids
-  msk_security_group_id   = module.security_groups.msk_security_group_id
+#   project_name            = var.project_name
+#   environment             = var.environment
+#   private_app_subnet_ids  = module.vpc.private_app_subnet_ids
+#   msk_security_group_id   = module.security_groups.msk_security_group_id
 
-  enable_monitoring       = true
+#   enable_monitoring       = true
+
+#   tags = local.common_tags
+# }
+
+# Kafka KRaft Module - Prod 환경 (3노드 클러스터)
+module "kafka" {
+  source = "../../modules/kafka"
+
+  project_name = var.project_name
+  environment  = var.environment
+
+  node_count    = 3
+  instance_type = "t3.small"
+  key_pair_name = var.key_pair_name
+
+  subnet_ids        = module.vpc.private_app_subnet_ids
+  security_group_id = module.security_groups.kafka_security_group_id
+  private_ips       = ["10.0.11.40", "10.0.12.40", "10.0.11.41"]
+
+  root_volume_size = 20
+  data_volume_size = 100
+  data_volume_iops = 3000
+
+  log_retention_days = 30
 
   tags = local.common_tags
 }
