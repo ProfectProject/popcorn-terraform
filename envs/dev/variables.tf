@@ -95,3 +95,81 @@ variable "elasticache_multi_az_enabled" {
   type    = bool
   default = false
 }
+
+# IAM 관련 변수
+variable "iam_name" {
+  type = string
+}
+
+# RDS 관련 변수
+variable "rds_name" {
+  type = string
+}
+
+variable "rds_instance_class" {
+  type    = string
+  default = "db.t3.micro"
+}
+
+variable "rds_allocated_storage" {
+  type    = number
+  default = 20
+}
+
+variable "rds_backup_retention_period" {
+  type    = number
+  default = 1
+}
+
+# ECS 관련 변수
+variable "ecs_name" {
+  type = string
+}
+
+variable "ecr_repository_url" {
+  type = string
+}
+
+variable "ecs_log_retention_days" {
+  type    = number
+  default = 7
+}
+
+# CloudMap 관련 변수
+variable "cloudmap_name" {
+  type = string
+}
+
+variable "cloudmap_namespace" {
+  type    = string
+  default = "goormpopcorn.local"
+}
+
+# EC2 Kafka 관련 변수
+variable "ec2_kafka_name" {
+  type = string
+}
+
+variable "ec2_kafka_instance_type" {
+  type    = string
+  default = "t3.micro"
+}
+
+variable "ec2_kafka_key_name" {
+  type = string
+}
+
+variable "ec2_kafka_node_count" {
+  type    = number
+  default = 1
+}
+
+# 공통 태그
+variable "tags" {
+  type = map(string)
+  default = {
+    Environment = "dev"
+    Project     = "goorm-popcorn"
+    ManagedBy   = "terraform"
+  }
+}

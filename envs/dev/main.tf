@@ -55,4 +55,116 @@ module "elasticache" {
   num_cache_clusters         = var.elasticache_num_cache_clusters
   automatic_failover_enabled = var.elasticache_automatic_failover
   multi_az_enabled           = var.elasticache_multi_az_enabled
+
+  tags = var.tags
+}
+
+# IAM 역할 모듈
+module "iam" {
+  source = "../../modules/iam"
+
+  name        = var.iam_name
+  environment = "dev"
+  region      = var.region
+
+  tags = var.tags
+}
+
+# RDS PostgreSQL 모듈 (Dev 환경용)
+module "rds" {
+  source = "../../modules/rds"
+
+  name              = var.rds_name
+  environment       = "dev"
+  subnet_ids        = values(module.vpc.data_subnet_ids)
+  security_group_id = module.security_groups.db_sg_id
+
+  # Dev 환경 최적화 설정
+  instance_class          = var.rds_instance_class
+  allocated_storage       = var.rds_allocated_storage
+  backup_retention_period = var.rds_backup_retention_period
+  multi_az               = false
+  deletion_protection    = false
+  skip_final_snapshot    = true
+
+  tags = var.tags
+}
+
+# CloudMap 서비스 디스커버리 모듈
+module "cloudmap" {
+  source = "../../modules/cloudmap"
+
+  name           = var.cloudmap_name
+  vpc_id         = module.vpc.vpc_id
+  namespace_name = var.cloudmap_namespace
+
+  tags = var.tags
+}
+
+# EC2 Kafka 모듈
+module "ec2_kafka" {
+  source = "../../modules/ec2-kafka"
+
+  name              = var.ec2_kafka_name
+  environment       = "dev"
+  node_count        = var.ec2_kafka_node_count
+  instance_type     = var.ec2_kafka_instance_type
+  key_name          = var.ec2_kafka_key_name
+  subnet_ids        = values(module.vpc.app_subnet_ids)
+  security_group_id = module.security_groups.kafka_sg_id
+
+  # Dev 환경 설정
+  root_volume_size = 8
+  data_volume_size = 20
+
+  tags = var.tags
+}
+
+# ECS Fargate 모듈
+module "ecs" {
+  source = "../../modules/ecs"
+
+  name        = var.ecs_name
+  environment = "dev"
+  region      = var.region
+  vpc_id      = module.vpc.vpc_id
+
+  # 네트워크 설정
+  subnet_ids        = values(module.vpc.app_subnet_ids)
+  security_group_id = module.security_groups.ecs_sg_id
+
+  # IAM 역할
+  ecs_task_execution_role_arn = module.iam.ecs_task_execution_role_arn
+  ecs_task_role_arn          = module.iam.ecs_task_role_arn
+
+  # ALB 연결
+  alb_target_group_arn = module.alb.target_group_arn
+  alb_listener_arn     = module.alb.listener_arn
+
+  # ECR 설정
+  ecr_repository_url = var.ecr_repository_url
+
+  # 서비스 디스커버리
+  service_discovery_service_arns = module.cloudmap.service_arns
+
+  # 외부 서비스 연결
+  elasticache_primary_endpoint = module.elasticache.primary_endpoint
+  elasticache_reader_endpoint  = module.elasticache.reader_endpoint
+  database_endpoint           = module.rds.endpoint
+  database_port              = module.rds.port
+  database_name              = module.rds.database_name
+  database_secret_arn        = module.rds.master_password_secret_arn
+  kafka_bootstrap_servers    = module.ec2_kafka.bootstrap_servers
+
+  # 로그 설정
+  log_retention_days = var.ecs_log_retention_days
+
+  tags = var.tags
+
+  depends_on = [
+    module.iam,
+    module.rds,
+    module.cloudmap,
+    module.ec2_kafka
+  ]
 }
