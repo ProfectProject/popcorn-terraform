@@ -172,6 +172,7 @@ module "ecs" {
   # ECR 설정 (Global ECR 리포지토리 사용)
   ecr_repository_url = try(data.terraform_remote_state.global_ecr.outputs.repository_url, var.ecr_repository_url)
   ecr_repositories   = var.ecr_repositories
+  image_tag         = var.image_tag
 
   # 서비스 디스커버리
   service_discovery_service_arns = module.cloudmap.service_arns

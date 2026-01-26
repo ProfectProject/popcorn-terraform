@@ -70,6 +70,12 @@ variable "ecr_repositories" {
   default     = {}
 }
 
+variable "image_tag" {
+  description = "Docker image tag to use (e.g., latest, dev-latest, feature-branch-abc12345)"
+  type        = string
+  default     = "latest"
+}
+
 variable "service_discovery_service_arns" {
   description = "Map of service discovery service ARNs"
   type        = map(string)

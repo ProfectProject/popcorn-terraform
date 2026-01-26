@@ -13,6 +13,15 @@ terraform {
 locals {
   base_tags = merge({ Name = var.name }, var.tags)
   account_id = var.account_id != null ? var.account_id : data.aws_caller_identity.current.account_id
+  
+  # ECR 이미지 URL 매핑 (동적 태그 지원)
+  service_images = {
+    for service_name in var.service_names : service_name => (
+      contains(keys(var.ecr_repositories), service_name) ?
+      "${var.ecr_repositories[service_name]}:${var.image_tag}" :
+      "${var.ecr_repository_url}/${var.name}/${service_name}:${var.image_tag}"
+    )
+  }
 }
 
 # Get current AWS account ID
@@ -100,9 +109,7 @@ resource "aws_ecs_task_definition" "services" {
   container_definitions = jsonencode([
     {
       name  = each.key
-      image = length(var.ecr_repositories) > 0 && contains(keys(var.ecr_repositories), each.key) ? 
-              "${var.ecr_repositories[each.key]}:latest" : 
-              "${var.ecr_repository_url}/${var.name}/${each.key}:latest"
+      image = local.service_images[each.key]
 
       portMappings = [
         {

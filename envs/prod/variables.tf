@@ -135,6 +135,12 @@ variable "ecr_repositories" {
   default     = {}
 }
 
+variable "image_tag" {
+  description = "Docker image tag to use"
+  type        = string
+  default     = "latest"
+}
+
 variable "ecs_log_retention_days" {
   type    = number
   default = 30
