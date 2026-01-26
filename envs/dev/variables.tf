@@ -121,6 +121,11 @@ variable "rds_backup_retention_period" {
   default = 1
 }
 
+variable "rds_engine_version" {
+  type    = string
+  default = "16.4"
+}
+
 # ECS 관련 변수
 variable "ecs_name" {
   type = string
@@ -155,6 +160,11 @@ variable "cloudmap_name" {
 variable "cloudmap_namespace" {
   type    = string
   default = "goormpopcorn.local"
+}
+
+variable "cloudmap_dns_ttl" {
+  type    = number
+  default = 60
 }
 
 # EC2 Kafka 관련 변수

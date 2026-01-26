@@ -24,10 +24,10 @@ resource "aws_db_subnet_group" "main" {
   })
 }
 
-# DB Parameter Group
-resource "aws_db_parameter_group" "main" {
-  family = "postgres18"  # Updated for PostgreSQL 18.1
-  name   = "${var.name}-db-pg"
+# DB Parameter Group for PostgreSQL 18
+resource "aws_db_parameter_group" "postgres18" {
+  family = "postgres18"  # PostgreSQL 18 family
+  name   = "${var.name}-db-pg-18"
 
   parameter {
     name         = "shared_preload_libraries"
@@ -43,6 +43,19 @@ resource "aws_db_parameter_group" "main" {
   parameter {
     name  = "log_min_duration_statement"
     value = "1000"
+  }
+
+  # Dev 환경 최적화 파라미터
+  parameter {
+    name         = "max_connections"
+    value        = "100"
+    apply_method = "pending-reboot"
+  }
+
+  parameter {
+    name         = "shared_buffers"
+    value        = "{DBInstanceClassMemory/32768}"
+    apply_method = "pending-reboot"
   }
 
   tags = local.base_tags
@@ -103,6 +116,7 @@ resource "aws_db_instance" "main" {
   engine         = "postgres"
   engine_version = var.engine_version
   instance_class = var.instance_class
+  allow_major_version_upgrade = true
 
   # Storage configuration
   allocated_storage     = var.allocated_storage
@@ -122,7 +136,7 @@ resource "aws_db_instance" "main" {
   multi_az              = var.multi_az
 
   # Parameter group
-  parameter_group_name = aws_db_parameter_group.main.name
+  parameter_group_name = aws_db_parameter_group.postgres18.name
 
   # Backup configuration
   backup_retention_period = var.backup_retention_period
