@@ -26,12 +26,13 @@ resource "aws_db_subnet_group" "main" {
 
 # DB Parameter Group
 resource "aws_db_parameter_group" "main" {
-  family = "postgres15"
+  family = "postgres18"  # Updated for PostgreSQL 18.1
   name   = "${var.name}-db-pg"
 
   parameter {
-    name  = "shared_preload_libraries"
-    value = "pg_stat_statements"
+    name         = "shared_preload_libraries"
+    value        = "pg_stat_statements"
+    apply_method = "pending-reboot"
   }
 
   parameter {

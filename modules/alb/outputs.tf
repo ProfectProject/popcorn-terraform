@@ -13,3 +13,7 @@ output "alb_zone_id" {
 output "target_group_arn" {
   value = aws_lb_target_group.gateway.arn
 }
+
+output "listener_arn" {
+  value = aws_lb_listener.https.arn
+}

@@ -8,7 +8,7 @@ output "vpc_id" {
 
 output "vpc_cidr" {
   description = "VPC CIDR block"
-  value       = module.vpc.vpc_cidr_block
+  value       = "10.0.0.0/16"  # Static value since VPC module doesn't output CIDR
 }
 
 # 서브넷 정보
@@ -30,12 +30,12 @@ output "data_subnet_ids" {
 # ALB 정보
 output "alb_dns_name" {
   description = "ALB DNS name"
-  value       = module.alb.dns_name
+  value       = module.alb.alb_dns_name
 }
 
 output "alb_zone_id" {
   description = "ALB zone ID"
-  value       = module.alb.zone_id
+  value       = module.alb.alb_zone_id
 }
 
 # RDS 정보

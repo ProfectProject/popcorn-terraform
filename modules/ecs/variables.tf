@@ -64,6 +64,12 @@ variable "ecr_repository_url" {
   type        = string
 }
 
+variable "ecr_repositories" {
+  description = "Map of service names to ECR repository URLs"
+  type        = map(string)
+  default     = {}
+}
+
 variable "service_discovery_service_arns" {
   description = "Map of service discovery service ARNs"
   type        = map(string)

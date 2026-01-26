@@ -1,8 +1,8 @@
 locals {
-  public_subnets = { for subnet in var.public_subnets : subnet.name => subnet }
-  app_subnets    = { for subnet in var.app_subnets : subnet.name => subnet }
-  data_subnets   = { for subnet in var.data_subnets : subnet.name => subnet }
-  base_tags      = merge({ Name = var.name }, var.tags)
+  public_subnets  = { for subnet in var.public_subnets : subnet.name => subnet }
+  private_subnets = { for subnet in var.private_subnets : subnet.name => subnet }
+  data_subnets    = { for subnet in var.data_subnets : subnet.name => subnet }
+  base_tags       = merge({ Name = var.name }, var.tags)
   public_subnets_by_az = {
     for subnet in var.public_subnets :
     subnet.az => subnet
@@ -14,13 +14,13 @@ locals {
     for az in local.nat_azs :
     az => local.public_subnets_by_az[az]
   }
-  app_route_table_by_az = {
-    for name, subnet in local.app_subnets :
+  private_route_table_by_az = {
+    for name, subnet in local.private_subnets :
     subnet.az => name
   }
-  app_route_table_ids = {
-    for az, name in local.app_route_table_by_az :
-    az => aws_route_table.app[name].id
+  private_route_table_ids = {
+    for az, name in local.private_route_table_by_az :
+    az => aws_route_table.private[name].id
   }
 }
 
@@ -51,15 +51,15 @@ resource "aws_subnet" "public" {
   })
 }
 
-resource "aws_subnet" "app" {
-  for_each          = local.app_subnets
+resource "aws_subnet" "private" {
+  for_each          = local.private_subnets
   vpc_id            = aws_vpc.this.id
   availability_zone = each.value.az
   cidr_block        = each.value.cidr
 
   tags = merge(var.tags, {
     Name = each.value.name
-    Tier = "app"
+    Tier = "private"
   })
 }
 
@@ -81,13 +81,13 @@ resource "aws_route_table" "public" {
   tags = merge(var.tags, { Name = "${var.name}-rt-public" })
 }
 
-resource "aws_route_table" "app" {
-  for_each = local.app_subnets
+resource "aws_route_table" "private" {
+  for_each = local.private_subnets
 
   vpc_id = aws_vpc.this.id
 
   tags = merge(var.tags, {
-    Name = "${var.name}-rt-app-${each.value.az}"
+    Name = "${var.name}-rt-private-${each.value.az}"
   })
 }
 
@@ -109,10 +109,10 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-resource "aws_route_table_association" "app" {
-  for_each       = aws_subnet.app
+resource "aws_route_table_association" "private" {
+  for_each       = aws_subnet.private
   subnet_id      = each.value.id
-  route_table_id = aws_route_table.app[each.key].id
+  route_table_id = aws_route_table.private[each.key].id
 }
 
 resource "aws_eip" "nat" {
@@ -132,10 +132,10 @@ resource "aws_nat_gateway" "this" {
   tags = merge(var.tags, { Name = "${var.name}-nat-${each.key}" })
 }
 
-resource "aws_route" "app_nat" {
+resource "aws_route" "private_nat" {
   for_each = var.enable_nat ? (
-    var.single_nat_gateway ? local.app_route_table_ids : {
-      for az, rt_id in local.app_route_table_ids :
+    var.single_nat_gateway ? local.private_route_table_ids : {
+      for az, rt_id in local.private_route_table_ids :
       az => rt_id
       if contains(keys(aws_nat_gateway.this), az)
     }

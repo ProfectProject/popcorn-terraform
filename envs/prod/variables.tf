@@ -19,7 +19,7 @@ variable "public_subnets" {
   }))
 }
 
-variable "app_subnets" {
+variable "private_subnets" {
   type = list(object({
     name = string
     az   = string
@@ -94,4 +94,87 @@ variable "elasticache_automatic_failover" {
 variable "elasticache_multi_az_enabled" {
   type    = bool
   default = true
+}
+# IAM 관련 변수
+variable "iam_name" {
+  type = string
+}
+
+# Aurora 관련 변수
+variable "aurora_name" {
+  type = string
+}
+
+variable "aurora_instance_class" {
+  type    = string
+  default = "db.r6g.large"
+}
+
+variable "aurora_backup_retention_period" {
+  type    = number
+  default = 7
+}
+
+variable "aurora_preferred_backup_window" {
+  type    = string
+  default = "03:00-04:00"
+}
+
+# ECS 관련 변수
+variable "ecs_name" {
+  type = string
+}
+
+variable "ecr_repository_url" {
+  type = string
+}
+
+variable "ecr_repositories" {
+  description = "Map of service names to ECR repository URLs"
+  type        = map(string)
+  default     = {}
+}
+
+variable "ecs_log_retention_days" {
+  type    = number
+  default = 30
+}
+
+# CloudMap 관련 변수
+variable "cloudmap_name" {
+  type = string
+}
+
+variable "cloudmap_namespace" {
+  type    = string
+  default = "goormpopcorn.local"
+}
+
+# EC2 Kafka 관련 변수
+variable "ec2_kafka_name" {
+  type = string
+}
+
+variable "ec2_kafka_instance_type" {
+  type    = string
+  default = "t3.medium"
+}
+
+variable "ec2_kafka_key_name" {
+  type = string
+}
+
+variable "ec2_kafka_node_count" {
+  type    = number
+  default = 3
+}
+
+# 공통 태그
+variable "tags" {
+  type = map(string)
+  default = {
+    Environment = "prod"
+    Project     = "goorm-popcorn"
+    ManagedBy   = "terraform"
+  }
 }

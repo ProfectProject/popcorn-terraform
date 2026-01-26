@@ -14,3 +14,4 @@ terraform.rc
 *.tfvars.json
 !envs/*/terraform.tfvars.example
 !envs/*/terraform.tfvars.json.example
+.docs/

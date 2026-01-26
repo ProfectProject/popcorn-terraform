@@ -100,7 +100,9 @@ resource "aws_ecs_task_definition" "services" {
   container_definitions = jsonencode([
     {
       name  = each.key
-      image = "${var.ecr_repository_url}/${var.name}/${each.key}:latest"
+      image = length(var.ecr_repositories) > 0 && contains(keys(var.ecr_repositories), each.key) ? 
+              "${var.ecr_repositories[each.key]}:latest" : 
+              "${var.ecr_repository_url}/${var.name}/${each.key}:latest"
 
       portMappings = [
         {

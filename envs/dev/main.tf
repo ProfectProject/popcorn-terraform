@@ -2,6 +2,7 @@ provider "aws" {
   region = var.region
 }
 
+# Global Route53 & ACM 상태 참조
 data "terraform_remote_state" "global_route53_acm" {
   backend = "s3"
 
@@ -12,13 +13,24 @@ data "terraform_remote_state" "global_route53_acm" {
   }
 }
 
+# Global ECR 상태 참조
+data "terraform_remote_state" "global_ecr" {
+  backend = "s3"
+
+  config = {
+    bucket = "goorm-popcorn-tfstate"
+    key    = "global/ecr/terraform.tfstate"
+    region = var.region
+  }
+}
+
 module "vpc" {
   source = "../../modules/vpc"
 
   name               = var.vpc_name
   cidr               = var.vpc_cidr
   public_subnets     = var.public_subnets
-  app_subnets        = var.app_subnets
+  private_subnets    = var.private_subnets
   data_subnets       = var.data_subnets
   enable_nat         = var.enable_nat
   single_nat_gateway = var.single_nat_gateway
@@ -42,6 +54,19 @@ module "alb" {
   target_group_name = var.alb_target_group_name
   target_group_port = var.alb_target_group_port
   health_check_path = var.alb_health_check_path
+}
+
+# Route53 레코드 추가
+resource "aws_route53_record" "dev" {
+  zone_id = "Z00594183MIRRC8JIBDYS"  # goormpopcorn.shop 호스팅 영역 ID
+  name    = "dev.goormpopcorn.shop"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.dns_name
+    zone_id                = module.alb.zone_id
+    evaluate_target_health = true
+  }
 }
 
 module "elasticache" {
@@ -110,8 +135,11 @@ module "ec2_kafka" {
   node_count        = var.ec2_kafka_node_count
   instance_type     = var.ec2_kafka_instance_type
   key_name          = var.ec2_kafka_key_name
-  subnet_ids        = values(module.vpc.app_subnet_ids)
+  subnet_ids        = values(module.vpc.private_subnet_ids)
   security_group_id = module.security_groups.kafka_sg_id
+
+  # IAM instance profile
+  iam_instance_profile = module.iam.ec2_ssm_instance_profile_name
 
   # Dev 환경 설정
   root_volume_size = 8
@@ -130,7 +158,7 @@ module "ecs" {
   vpc_id      = module.vpc.vpc_id
 
   # 네트워크 설정
-  subnet_ids        = values(module.vpc.app_subnet_ids)
+  subnet_ids        = values(module.vpc.private_subnet_ids)
   security_group_id = module.security_groups.ecs_sg_id
 
   # IAM 역할
@@ -141,8 +169,9 @@ module "ecs" {
   alb_target_group_arn = module.alb.target_group_arn
   alb_listener_arn     = module.alb.listener_arn
 
-  # ECR 설정
-  ecr_repository_url = var.ecr_repository_url
+  # ECR 설정 (Global ECR 리포지토리 사용)
+  ecr_repository_url = try(data.terraform_remote_state.global_ecr.outputs.repository_url, var.ecr_repository_url)
+  ecr_repositories   = var.ecr_repositories
 
   # 서비스 디스커버리
   service_discovery_service_arns = module.cloudmap.service_arns

@@ -10,8 +10,8 @@ output "public_subnet_ids" {
   value = { for name, subnet in aws_subnet.public : name => subnet.id }
 }
 
-output "app_subnet_ids" {
-  value = { for name, subnet in aws_subnet.app : name => subnet.id }
+output "private_subnet_ids" {
+  value = { for name, subnet in aws_subnet.private : name => subnet.id }
 }
 
 output "data_subnet_ids" {
@@ -20,15 +20,15 @@ output "data_subnet_ids" {
 
 output "route_table_ids" {
   value = {
-    public = aws_route_table.public.id
-    app    = { for name, rt in aws_route_table.app : name => rt.id }
-    data   = aws_route_table.data.id
+    public  = aws_route_table.public.id
+    private = { for name, rt in aws_route_table.private : name => rt.id }
+    data    = aws_route_table.data.id
   }
 }
 
 output "private_route_table_ids" {
   value = {
-    for name, subnet in aws_subnet.app :
-    subnet.availability_zone => aws_route_table.app[name].id
+    for name, subnet in aws_subnet.private :
+    subnet.availability_zone => aws_route_table.private[name].id
   }
 }

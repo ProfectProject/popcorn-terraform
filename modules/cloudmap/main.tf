@@ -41,7 +41,7 @@ resource "aws_service_discovery_service" "services" {
     routing_policy = "MULTIVALUE"
   }
 
-  health_check_grace_period_seconds = var.health_check_grace_period
+  # health_check_grace_period_seconds = var.health_check_grace_period  # Invalid argument removed
 
   tags = merge(local.base_tags, {
     Name    = "${var.name}-${each.key}-service"

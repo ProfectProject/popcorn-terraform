@@ -14,7 +14,7 @@ variable "public_subnets" {
   }))
 }
 
-variable "app_subnets" {
+variable "private_subnets" {
   type = list(object({
     name = string
     cidr = string

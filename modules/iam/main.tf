@@ -33,8 +33,6 @@ resource "aws_iam_role" "ecs_task_execution" {
       }
     ]
   })
-
-  tags = local.base_tags
 }
 
 # ECS Task Execution Role Policy Attachment
@@ -90,8 +88,6 @@ resource "aws_iam_role" "ecs_task" {
       }
     ]
   })
-
-  tags = local.base_tags
 }
 
 # ECS Task Role Policy
@@ -151,11 +147,62 @@ resource "aws_iam_role" "ecs_autoscaling" {
       }
     ]
   })
-
-  tags = local.base_tags
 }
 
-resource "aws_iam_role_policy_attachment" "ecs_autoscaling" {
-  role       = aws_iam_role.ecs_autoscaling.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSServiceRolePolicy"
+# ECS Auto Scaling Role Custom Policy
+resource "aws_iam_role_policy" "ecs_autoscaling" {
+  name = "${var.name}-ecs-autoscaling-policy"
+  role = aws_iam_role.ecs_autoscaling.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecs:DescribeServices",
+          "ecs:UpdateService",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:PutMetricAlarm",
+          "cloudwatch:DeleteAlarms"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# EC2 SSM Role for Kafka instances
+resource "aws_iam_role" "ec2_ssm" {
+  name = "${var.name}-ec2-ssm-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# EC2 SSM Role Policy Attachments
+resource "aws_iam_role_policy_attachment" "ec2_ssm_managed_instance_core" {
+  role       = aws_iam_role.ec2_ssm.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_role_policy_attachment" "ec2_ssm_cloudwatch_agent" {
+  role       = aws_iam_role.ec2_ssm.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+# EC2 Instance Profile
+resource "aws_iam_instance_profile" "ec2_ssm" {
+  name = "${var.name}-ec2-ssm-profile"
+  role = aws_iam_role.ec2_ssm.name
 }
