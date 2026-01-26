@@ -43,6 +43,7 @@ module "security_groups" {
   vpc_id = module.vpc.vpc_id
 }
 
+# ALB 모듈 - Route53 트래픽 수신용 (Multi-AZ Public 서브넷)
 module "alb" {
   source = "../../modules/alb"
 
@@ -56,7 +57,7 @@ module "alb" {
   health_check_path = var.alb_health_check_path
 }
 
-# Route53 레코드 추가
+# Route53 레코드 - 외부 트래픽 수신
 resource "aws_route53_record" "dev" {
   zone_id = "Z00594183MIRRC8JIBDYS"  # goormpopcorn.shop 호스팅 영역 ID
   name    = "dev.goormpopcorn.shop"
@@ -95,7 +96,7 @@ module "iam" {
   tags = var.tags
 }
 
-# RDS PostgreSQL 모듈 (Dev 환경용)
+# RDS PostgreSQL 모듈 (Dev 환경용) - 단일 인스턴스, Multi-AZ 비활성화
 module "rds" {
   source = "../../modules/rds"
 
@@ -104,11 +105,14 @@ module "rds" {
   subnet_ids        = values(module.vpc.data_subnet_ids)
   security_group_id = module.security_groups.db_sg_id
 
+  # PostgreSQL 설정
+  engine_version = var.rds_engine_version
+
   # Dev 환경 최적화 설정
   instance_class          = var.rds_instance_class
   allocated_storage       = var.rds_allocated_storage
   backup_retention_period = var.rds_backup_retention_period
-  multi_az               = false
+  multi_az               = false  # 단일 인스턴스 (비용 절약)
   deletion_protection    = false
   skip_final_snapshot    = true
 
@@ -122,6 +126,7 @@ module "cloudmap" {
   name           = var.cloudmap_name
   vpc_id         = module.vpc.vpc_id
   namespace_name = var.cloudmap_namespace
+  dns_ttl        = var.cloudmap_dns_ttl
 
   tags = var.tags
 }
@@ -165,7 +170,7 @@ module "ecs" {
   ecs_task_execution_role_arn = module.iam.ecs_task_execution_role_arn
   ecs_task_role_arn          = module.iam.ecs_task_role_arn
 
-  # ALB 연결
+  # ALB 연결 - Route53 트래픽 수신용
   alb_target_group_arn = module.alb.target_group_arn
   alb_listener_arn     = module.alb.listener_arn
 
