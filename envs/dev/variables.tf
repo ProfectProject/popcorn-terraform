@@ -19,7 +19,7 @@ variable "public_subnets" {
   }))
 }
 
-variable "app_subnets" {
+variable "private_subnets" {
   type = list(object({
     name = string
     az   = string
@@ -128,6 +128,18 @@ variable "ecs_name" {
 
 variable "ecr_repository_url" {
   type = string
+}
+
+variable "ecr_repositories" {
+  description = "Map of service names to ECR repository URLs"
+  type        = map(string)
+  default     = {}
+}
+
+variable "image_tag" {
+  description = "Docker image tag to use"
+  type        = string
+  default     = "dev-latest"
 }
 
 variable "ecs_log_retention_days" {
