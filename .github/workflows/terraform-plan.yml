@@ -31,7 +31,7 @@ jobs:
 
       - name: Prepare terraform.tfvars
         env:
-          TFVARS_CONTENT: ${{ secrets[format('TFVARS_%s', env.ENV_NAME)] }}
+          TFVARS_CONTENT: ${{ github.ref_name == 'main' && secrets.TFVARS_PROD || secrets.TFVARS_DEV }}
         run: |
           set -euo pipefail
           if [[ -n "${TFVARS_CONTENT:-}" ]]; then
