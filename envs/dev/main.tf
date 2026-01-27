@@ -59,7 +59,7 @@ module "alb" {
 
 # Route53 레코드 - 외부 트래픽 수신
 resource "aws_route53_record" "dev" {
-  zone_id = "Z00594183MIRRC8JIBDYS"  # goormpopcorn.shop 호스팅 영역 ID
+  zone_id = "Z00594183MIRRC8JIBDYS" # goormpopcorn.shop 호스팅 영역 ID
   name    = "dev.goormpopcorn.shop"
   type    = "A"
 
@@ -81,6 +81,13 @@ module "elasticache" {
   num_cache_clusters         = var.elasticache_num_cache_clusters
   automatic_failover_enabled = var.elasticache_automatic_failover
   multi_az_enabled           = var.elasticache_multi_az_enabled
+
+  # Dev 환경 최적화 설정
+  transit_encryption_enabled = false # 개발 환경에서는 성능 우선
+  apply_immediately          = true  # 즉시 적용
+  snapshot_retention_limit   = 1     # 최소 백업 보존
+  snapshot_window            = "03:00-05:00"
+  maintenance_window         = "sun:05:00-sun:07:00"
 
   tags = var.tags
 }
@@ -112,9 +119,9 @@ module "rds" {
   instance_class          = var.rds_instance_class
   allocated_storage       = var.rds_allocated_storage
   backup_retention_period = var.rds_backup_retention_period
-  multi_az               = false  # 단일 인스턴스 (비용 절약)
-  deletion_protection    = false
-  skip_final_snapshot    = true
+  multi_az                = false # 단일 인스턴스 (비용 절약)
+  deletion_protection     = false
+  skip_final_snapshot     = true
 
   tags = var.tags
 }
@@ -168,7 +175,7 @@ module "ecs" {
 
   # IAM 역할
   ecs_task_execution_role_arn = module.iam.ecs_task_execution_role_arn
-  ecs_task_role_arn          = module.iam.ecs_task_role_arn
+  ecs_task_role_arn           = module.iam.ecs_task_role_arn
 
   # ALB 연결 - Route53 트래픽 수신용
   alb_target_group_arn = module.alb.target_group_arn
@@ -177,7 +184,7 @@ module "ecs" {
   # ECR 설정 (Global ECR 리포지토리 사용)
   ecr_repository_url = try(data.terraform_remote_state.global_ecr.outputs.repository_url, var.ecr_repository_url)
   ecr_repositories   = var.ecr_repositories
-  image_tag         = var.image_tag
+  image_tag          = var.image_tag
 
   # 서비스 디스커버리
   service_discovery_service_arns = module.cloudmap.service_arns
@@ -185,11 +192,11 @@ module "ecs" {
   # 외부 서비스 연결
   elasticache_primary_endpoint = module.elasticache.primary_endpoint
   elasticache_reader_endpoint  = module.elasticache.reader_endpoint
-  database_endpoint           = module.rds.endpoint
-  database_port              = module.rds.port
-  database_name              = module.rds.database_name
-  database_secret_arn        = module.rds.master_password_secret_arn
-  kafka_bootstrap_servers    = module.ec2_kafka.bootstrap_servers
+  database_endpoint            = module.rds.endpoint
+  database_port                = module.rds.port
+  database_name                = module.rds.database_name
+  database_secret_arn          = module.rds.master_password_secret_arn
+  kafka_bootstrap_servers      = module.ec2_kafka.bootstrap_servers
 
   # 로그 설정
   log_retention_days = var.ecs_log_retention_days

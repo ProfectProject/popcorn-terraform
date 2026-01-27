@@ -72,13 +72,15 @@ variable "elasticache_name" {
 }
 
 variable "elasticache_node_type" {
-  type    = string
-  default = "cache.t4g.small"
+  description = "ElastiCache node type"
+  type        = string
+  default     = "cache.t4g.small"
 }
 
 variable "elasticache_engine_version" {
-  type    = string
-  default = "7.0"
+  description = "Valkey engine version"
+  type        = string
+  default     = "8.0"
 }
 
 variable "elasticache_num_cache_clusters" {

@@ -5,13 +5,13 @@ provider "aws" {
 # ECR Repositories for all microservices
 resource "aws_ecr_repository" "repositories" {
   for_each = toset([
-    "goorm-popcorn-order",
-    "goorm-popcorn-order-query", 
-    "goorm-popcorn-payment",
     "goorm-popcorn-api-gateway",
-    "goorm-popcorn-qr",
-    "goorm-popcorn-store",
     "goorm-popcorn-user",
+    "goorm-popcorn-store",
+    "goorm-popcorn-order",
+    "goorm-popcorn-payment",
+    "goorm-popcorn-checkin",
+    "goorm-popcorn-order-query"
   ])
 
   name                 = each.value

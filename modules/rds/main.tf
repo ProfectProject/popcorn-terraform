@@ -26,7 +26,7 @@ resource "aws_db_subnet_group" "main" {
 
 # DB Parameter Group for PostgreSQL 18
 resource "aws_db_parameter_group" "postgres18" {
-  family = "postgres18"  # PostgreSQL 18 family
+  family = "postgres18" # PostgreSQL 18 family
   name   = "${var.name}-db-pg-18"
 
   parameter {
@@ -113,9 +113,9 @@ resource "aws_db_instance" "main" {
   identifier = "${var.name}-postgres"
 
   # Engine configuration
-  engine         = "postgres"
-  engine_version = var.engine_version
-  instance_class = var.instance_class
+  engine                      = "postgres"
+  engine_version              = var.engine_version
+  instance_class              = var.instance_class
   allow_major_version_upgrade = true
 
   # Storage configuration
@@ -133,25 +133,25 @@ resource "aws_db_instance" "main" {
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [var.security_group_id]
   publicly_accessible    = false
-  multi_az              = var.multi_az
+  multi_az               = var.multi_az
 
   # Parameter group
   parameter_group_name = aws_db_parameter_group.postgres18.name
 
   # Backup configuration
   backup_retention_period = var.backup_retention_period
-  backup_window          = var.backup_window
-  maintenance_window     = var.maintenance_window
-  copy_tags_to_snapshot  = true
+  backup_window           = var.backup_window
+  maintenance_window      = var.maintenance_window
+  copy_tags_to_snapshot   = true
 
   # Monitoring
   performance_insights_enabled = var.performance_insights_enabled
-  monitoring_interval         = var.monitoring_interval
-  monitoring_role_arn        = var.monitoring_interval > 0 ? aws_iam_role.rds_enhanced_monitoring[0].arn : null
+  monitoring_interval          = var.monitoring_interval
+  monitoring_role_arn          = var.monitoring_interval > 0 ? aws_iam_role.rds_enhanced_monitoring[0].arn : null
 
   # Deletion protection
-  deletion_protection   = var.deletion_protection
-  skip_final_snapshot  = var.skip_final_snapshot
+  deletion_protection       = var.deletion_protection
+  skip_final_snapshot       = var.skip_final_snapshot
   final_snapshot_identifier = var.skip_final_snapshot ? null : "${var.name}-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
 
   # CloudWatch logs
