@@ -59,7 +59,7 @@ module "alb" {
 
 # Route53 레코드 - 외부 트래픽 수신
 resource "aws_route53_record" "dev" {
-  zone_id = "Z00594183MIRRC8JIBDYS" # goormpopcorn.shop 호스팅 영역 ID
+  zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
   name    = "dev.goormpopcorn.shop"
   type    = "A"
 
