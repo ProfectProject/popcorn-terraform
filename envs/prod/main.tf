@@ -57,13 +57,13 @@ module "alb" {
 
 # Route53 레코드 추가
 resource "aws_route53_record" "prod" {
-  zone_id = "Z00594183MIRRC8JIBDYS" # goormpopcorn.shop 호스팅 영역 ID
+  zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
   name    = "goormpopcorn.shop"
   type    = "A"
 
   alias {
-    name                   = module.alb.dns_name
-    zone_id                = module.alb.zone_id
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
     evaluate_target_health = true
   }
 }
