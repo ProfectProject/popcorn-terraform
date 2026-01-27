@@ -97,28 +97,28 @@ variable "service_names" {
 variable "services" {
   description = "Configuration for ECS services"
   type = map(object({
-    cpu                   = number
-    memory               = number
-    desired_count        = number
-    min_capacity         = number
-    max_capacity         = number
-    cpu_target_value     = number
-    memory_target_value  = number
+    cpu                 = number
+    memory              = number
+    desired_count       = number
+    min_capacity        = number
+    max_capacity        = number
+    cpu_target_value    = number
+    memory_target_value = number
     environment_variables = list(object({
       name  = string
       value = string
     }))
   }))
-  
+
   default = {
     "api-gateway" = {
-      cpu                   = 256
-      memory               = 512
-      desired_count        = 1
-      min_capacity         = 1
-      max_capacity         = 2
-      cpu_target_value     = 70
-      memory_target_value  = 80
+      cpu                 = 256
+      memory              = 512
+      desired_count       = 1
+      min_capacity        = 1
+      max_capacity        = 2
+      cpu_target_value    = 70
+      memory_target_value = 80
       environment_variables = [
         {
           name  = "SPRING_PROFILES_ACTIVE"
@@ -127,13 +127,13 @@ variable "services" {
       ]
     }
     "user-service" = {
-      cpu                   = 256
-      memory               = 512
-      desired_count        = 1
-      min_capacity         = 1
-      max_capacity         = 3
-      cpu_target_value     = 70
-      memory_target_value  = 80
+      cpu                 = 256
+      memory              = 512
+      desired_count       = 1
+      min_capacity        = 1
+      max_capacity        = 3
+      cpu_target_value    = 70
+      memory_target_value = 80
       environment_variables = [
         {
           name  = "SPRING_PROFILES_ACTIVE"
@@ -142,13 +142,13 @@ variable "services" {
       ]
     }
     "store-service" = {
-      cpu                   = 256
-      memory               = 512
-      desired_count        = 1
-      min_capacity         = 1
-      max_capacity         = 3
-      cpu_target_value     = 70
-      memory_target_value  = 80
+      cpu                 = 256
+      memory              = 512
+      desired_count       = 1
+      min_capacity        = 1
+      max_capacity        = 3
+      cpu_target_value    = 70
+      memory_target_value = 80
       environment_variables = [
         {
           name  = "SPRING_PROFILES_ACTIVE"
@@ -157,13 +157,13 @@ variable "services" {
       ]
     }
     "order-service" = {
-      cpu                   = 256
-      memory               = 512
-      desired_count        = 1
-      min_capacity         = 1
-      max_capacity         = 3
-      cpu_target_value     = 70
-      memory_target_value  = 80
+      cpu                 = 256
+      memory              = 512
+      desired_count       = 1
+      min_capacity        = 1
+      max_capacity        = 3
+      cpu_target_value    = 70
+      memory_target_value = 80
       environment_variables = [
         {
           name  = "SPRING_PROFILES_ACTIVE"
@@ -172,13 +172,13 @@ variable "services" {
       ]
     }
     "payment-service" = {
-      cpu                   = 256
-      memory               = 512
-      desired_count        = 1
-      min_capacity         = 1
-      max_capacity         = 3
-      cpu_target_value     = 70
-      memory_target_value  = 80
+      cpu                 = 256
+      memory              = 512
+      desired_count       = 1
+      min_capacity        = 1
+      max_capacity        = 3
+      cpu_target_value    = 70
+      memory_target_value = 80
       environment_variables = [
         {
           name  = "SPRING_PROFILES_ACTIVE"
@@ -187,13 +187,13 @@ variable "services" {
       ]
     }
     "checkin-service" = {
-      cpu                   = 256
-      memory               = 512
-      desired_count        = 1
-      min_capacity         = 1
-      max_capacity         = 2
-      cpu_target_value     = 70
-      memory_target_value  = 80
+      cpu                 = 256
+      memory              = 512
+      desired_count       = 1
+      min_capacity        = 1
+      max_capacity        = 2
+      cpu_target_value    = 70
+      memory_target_value = 80
       environment_variables = [
         {
           name  = "SPRING_PROFILES_ACTIVE"
@@ -202,13 +202,13 @@ variable "services" {
       ]
     }
     "order-query" = {
-      cpu                   = 256
-      memory               = 512
-      desired_count        = 1
-      min_capacity         = 1
-      max_capacity         = 2
-      cpu_target_value     = 70
-      memory_target_value  = 80
+      cpu                 = 256
+      memory              = 512
+      desired_count       = 1
+      min_capacity        = 1
+      max_capacity        = 2
+      cpu_target_value    = 70
+      memory_target_value = 80
       environment_variables = [
         {
           name  = "SPRING_PROFILES_ACTIVE"

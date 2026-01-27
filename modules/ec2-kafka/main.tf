@@ -41,7 +41,7 @@ resource "aws_instance" "kafka" {
   instance_type = var.instance_type
   key_name      = var.key_name
 
-  subnet_id = var.subnet_ids[count.index % length(var.subnet_ids)]
+  subnet_id              = var.subnet_ids[count.index % length(var.subnet_ids)]
   vpc_security_group_ids = [var.security_group_id]
 
   private_ip = length(var.private_ips) > 0 ? var.private_ips[count.index] : null
@@ -50,7 +50,7 @@ resource "aws_instance" "kafka" {
     volume_type = "gp3"
     volume_size = var.root_volume_size
     encrypted   = true
-    
+
     tags = merge(local.base_tags, {
       Name = "${var.name}-kafka-${var.environment}-${count.index + 1}-root"
     })

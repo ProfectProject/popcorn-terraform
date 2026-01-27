@@ -110,31 +110,31 @@ resource "aws_iam_role_policy_attachment" "rds_enhanced_monitoring" {
 
 # Aurora Cluster
 resource "aws_rds_cluster" "main" {
-  cluster_identifier      = "${var.name}-aurora-cluster"
-  engine                 = "aurora-postgresql"
-  engine_version         = var.engine_version
-  database_name          = var.database_name
-  master_username        = var.master_username
-  master_password        = random_password.master.result
-  
-  backup_retention_period = var.backup_retention_period
-  preferred_backup_window = var.backup_window
+  cluster_identifier = "${var.name}-aurora-cluster"
+  engine             = "aurora-postgresql"
+  engine_version     = var.engine_version
+  database_name      = var.database_name
+  master_username    = var.master_username
+  master_password    = random_password.master.result
+
+  backup_retention_period      = var.backup_retention_period
+  preferred_backup_window      = var.backup_window
   preferred_maintenance_window = var.maintenance_window
-  
+
   db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.main.name
-  db_subnet_group_name           = aws_db_subnet_group.main.name
-  vpc_security_group_ids         = [var.security_group_id]
-  
+  db_subnet_group_name            = aws_db_subnet_group.main.name
+  vpc_security_group_ids          = [var.security_group_id]
+
   storage_encrypted = true
-  kms_key_id       = var.kms_key_id
-  
+  kms_key_id        = var.kms_key_id
+
   skip_final_snapshot       = var.skip_final_snapshot
   final_snapshot_identifier = var.skip_final_snapshot ? null : "${var.name}-aurora-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
-  
+
   deletion_protection = var.deletion_protection
-  
+
   enabled_cloudwatch_logs_exports = ["postgresql"]
-  
+
   tags = merge(local.base_tags, {
     Name = "${var.name}-aurora-cluster"
   })
@@ -155,13 +155,13 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
   instance_class     = var.instance_class
   engine             = aws_rds_cluster.main.engine
   engine_version     = aws_rds_cluster.main.engine_version
-  
+
   db_parameter_group_name = aws_db_parameter_group.main.name
-  
+
   performance_insights_enabled = var.performance_insights_enabled
-  monitoring_interval         = var.monitoring_interval
-  monitoring_role_arn        = var.monitoring_interval > 0 ? aws_iam_role.rds_enhanced_monitoring[0].arn : null
-  
+  monitoring_interval          = var.monitoring_interval
+  monitoring_role_arn          = var.monitoring_interval > 0 ? aws_iam_role.rds_enhanced_monitoring[0].arn : null
+
   tags = merge(local.base_tags, {
     Name = "${var.name}-aurora-${count.index}"
   })

@@ -11,9 +11,9 @@ terraform {
 }
 
 locals {
-  base_tags = merge({ Name = var.name }, var.tags)
+  base_tags  = merge({ Name = var.name }, var.tags)
   account_id = var.account_id != null ? var.account_id : data.aws_caller_identity.current.account_id
-  
+
   # ECR 이미지 URL 매핑 (동적 태그 지원)
   service_images = {
     for service_name in var.service_names : service_name => (
@@ -104,7 +104,7 @@ resource "aws_ecs_task_definition" "services" {
   cpu                      = each.value.cpu
   memory                   = each.value.memory
   execution_role_arn       = var.ecs_task_execution_role_arn
-  task_role_arn           = var.ecs_task_role_arn
+  task_role_arn            = var.ecs_task_role_arn
 
   container_definitions = jsonencode([
     {
@@ -204,19 +204,19 @@ resource "aws_ecs_service" "services" {
 
   capacity_provider_strategy {
     capacity_provider = "FARGATE"
-    weight           = 1
-    base             = each.value.min_capacity
+    weight            = 1
+    base              = each.value.min_capacity
   }
 
   capacity_provider_strategy {
     capacity_provider = "FARGATE_SPOT"
-    weight           = var.environment == "prod" ? 3 : 1
-    base             = 0
+    weight            = var.environment == "prod" ? 3 : 1
+    base              = 0
   }
 
   network_configuration {
     security_groups  = [var.security_group_id]
-    subnets         = var.subnet_ids
+    subnets          = var.subnet_ids
     assign_public_ip = false
   }
 

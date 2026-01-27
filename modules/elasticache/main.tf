@@ -25,18 +25,18 @@ resource "aws_elasticache_replication_group" "this" {
   multi_az_enabled           = local.enable_multi_az
   at_rest_encryption_enabled = var.at_rest_encryption_enabled
   transit_encryption_enabled = var.transit_encryption_enabled
-  
+
   # Valkey 최적화 설정
   apply_immediately = var.apply_immediately
-  
+
   # 백업 설정
   snapshot_retention_limit = var.snapshot_retention_limit
-  snapshot_window         = var.snapshot_window
-  
+  snapshot_window          = var.snapshot_window
+
   # 유지보수 설정
   maintenance_window = var.maintenance_window
 
-  tags = merge(var.tags, { 
+  tags = merge(var.tags, {
     Name   = var.name
     Engine = "valkey"
   })
