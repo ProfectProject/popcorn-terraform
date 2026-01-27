@@ -8,7 +8,7 @@ output "vpc_id" {
 
 output "vpc_cidr" {
   description = "VPC CIDR block"
-  value       = "10.0.0.0/16"  # Static value since VPC module doesn't output CIDR
+  value       = "10.0.0.0/16" # Static value since VPC module doesn't output CIDR
 }
 
 # 서브넷 정보
