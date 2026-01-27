@@ -77,8 +77,9 @@ variable "elasticache_node_type" {
 }
 
 variable "elasticache_engine_version" {
-  type    = string
-  default = "7.0"
+  description = "Valkey engine version"
+  type        = string
+  default     = "8.0"
 }
 
 variable "elasticache_num_cache_clusters" {

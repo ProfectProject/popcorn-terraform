@@ -91,7 +91,7 @@ variable "log_retention_days" {
 variable "service_names" {
   description = "List of service names"
   type        = list(string)
-  default     = ["api-gateway", "user-service", "store-service", "order-service", "payment-service", "qr-service"]
+  default     = ["api-gateway", "user-service", "store-service", "order-service", "payment-service", "checkin-service", "order-query"]
 }
 
 variable "services" {
@@ -186,7 +186,22 @@ variable "services" {
         }
       ]
     }
-    "qr-service" = {
+    "checkin-service" = {
+      cpu                   = 256
+      memory               = 512
+      desired_count        = 1
+      min_capacity         = 1
+      max_capacity         = 2
+      cpu_target_value     = 70
+      memory_target_value  = 80
+      environment_variables = [
+        {
+          name  = "SPRING_PROFILES_ACTIVE"
+          value = "dev"
+        }
+      ]
+    }
+    "order-query" = {
       cpu                   = 256
       memory               = 512
       desired_count        = 1

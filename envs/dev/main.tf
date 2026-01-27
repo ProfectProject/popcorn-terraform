@@ -81,6 +81,13 @@ module "elasticache" {
   num_cache_clusters         = var.elasticache_num_cache_clusters
   automatic_failover_enabled = var.elasticache_automatic_failover
   multi_az_enabled           = var.elasticache_multi_az_enabled
+  
+  # Dev 환경 최적화 설정
+  transit_encryption_enabled = false  # 개발 환경에서는 성능 우선
+  apply_immediately         = true    # 즉시 적용
+  snapshot_retention_limit  = 1       # 최소 백업 보존
+  snapshot_window          = "03:00-05:00"
+  maintenance_window       = "sun:05:00-sun:07:00"
 
   tags = var.tags
 }
