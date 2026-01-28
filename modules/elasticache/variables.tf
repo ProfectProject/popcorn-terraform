@@ -89,3 +89,15 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+# CloudWatch 모니터링 관련 변수
+variable "enable_cloudwatch_alarms" {
+  description = "Enable CloudWatch alarms for ElastiCache"
+  type        = bool
+  default     = true
+}
+
+variable "sns_topic_arn" {
+  description = "SNS topic ARN for CloudWatch alarms (optional)"
+  type        = string
+  default     = null
+}

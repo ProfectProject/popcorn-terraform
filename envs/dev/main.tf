@@ -55,6 +55,12 @@ module "alb" {
   target_group_name = var.alb_target_group_name
   target_group_port = var.alb_target_group_port
   health_check_path = var.alb_health_check_path
+
+  # 모니터링 설정 (기본값으로 CloudWatch 알람 활성화)
+  enable_cloudwatch_alarms = true
+  enable_access_logs       = false # S3 비용 절약을 위해 비활성화
+
+  tags = var.tags
 }
 
 # Route53 레코드 - 외부 트래픽 수신
@@ -88,6 +94,9 @@ module "elasticache" {
   snapshot_retention_limit   = 1     # 최소 백업 보존
   snapshot_window            = "03:00-05:00"
   maintenance_window         = "sun:05:00-sun:07:00"
+
+  # 모니터링 설정 (기본값으로 CloudWatch 알람 활성화)
+  enable_cloudwatch_alarms = true
 
   tags = var.tags
 }
@@ -208,5 +217,29 @@ module "ecs" {
     module.rds,
     module.cloudmap,
     module.ec2_kafka
+  ]
+}
+
+# 통합 모니터링 모듈 (SNS 없이)
+module "monitoring" {
+  source = "../../modules/monitoring"
+
+  name   = var.ecs_name
+  region = var.region
+
+  # 기존 리소스 연결
+  alb_arn_suffix         = module.alb.alb_arn_suffix
+  rds_instance_id        = module.rds.instance_id
+  elasticache_cluster_id = module.elasticache.cluster_id
+
+  # SNS 알림 비활성화 (기본값)
+  enable_sns_alerts = false
+
+  tags = var.tags
+
+  depends_on = [
+    module.alb,
+    module.rds,
+    module.elasticache
   ]
 }

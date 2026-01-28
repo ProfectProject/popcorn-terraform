@@ -6,6 +6,16 @@ resource "aws_lb" "this" {
   subnets         = var.public_subnet_ids
   security_groups = [var.security_group_id]
 
+  # 액세스 로그 설정 (선택적)
+  dynamic "access_logs" {
+    for_each = var.enable_access_logs ? [1] : []
+    content {
+      bucket  = var.access_logs_bucket
+      prefix  = var.access_logs_prefix
+      enabled = true
+    }
+  }
+
   tags = var.tags
 }
 

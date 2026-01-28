@@ -1,324 +1,293 @@
-# popcorn-terraform
+# Popcorn MSA Terraform Infrastructure
 
-Goorm Popcorn 프로젝트의 AWS 인프라를 Terraform으로 관리합니다.
+## 개요
 
-## 🎯 변경된 스펙 (2026-01-27)
+Popcorn MSA 프로젝트의 AWS 인프라를 Terraform으로 관리하는 Infrastructure as Code (IaC) 저장소입니다.
 
-### 📊 **환경별 구성**
-| 환경 | AZ 구성 | 데이터베이스 | 캐시 | 특징 |
-|------|---------|-------------|------|------|
-| **Dev** | 단일 AZ | RDS PostgreSQL | Valkey 8.0 (단일 노드) | 비용 최적화, 개발용 (~$125/월) |
-| **Prod** | 멀티 AZ | Aurora PostgreSQL | Valkey 8.0 (Primary+Replica) | 고가용성, 운영용 (~$520/월) |
-| ~~Staging~~ | ~~제외~~ | ~~제외~~ | ~~제외~~ | 구현하지 않음 |
+## 아키텍처
 
-## 요구사항 및 버전 정책
-- Terraform >= 1.4.0
-- AWS Provider ~> 5.0
-- AWS CLI >= 2.0 (AssumeRole 프로파일 설정 필요)
+### 인프라 구성요소
 
-Terraform과 Provider 버전은 모든 스택에서 동일하게 고정하고,
-각 스택의 `versions.tf`로 명시적으로 관리합니다.
-공통 템플릿은 `templates/versions.tf`를 사용합니다.
+- **VPC**: Multi-AZ 네트워크 구성
+- **ECS Fargate**: 마이크로서비스 컨테이너 오케스트레이션
+- **RDS PostgreSQL**: 관계형 데이터베이스
+- **ElastiCache (Valkey)**: 인메모리 캐시
+- **Application Load Balancer**: 로드 밸런싱 및 SSL 종료
+- **EC2 Kafka**: 메시지 브로커 (KRaft 모드)
+- **CloudMap**: 서비스 디스커버리
+- **Route53**: DNS 관리
+
+### 모니터링 구성요소
+
+- **CloudWatch**: 로그 수집 및 메트릭 모니터링
+- **Container Insights**: ECS 성능 모니터링
+- **Performance Insights**: RDS 성능 분석
+- **CloudWatch Alarms**: 자동 알림 시스템
+- **CloudWatch Dashboards**: 통합 모니터링 대시보드
 
 ## 디렉토리 구조
+
 ```
-.
-├── bootstrap/                  # Terraform 백엔드 초기화
-│   ├── main.tf
-│   ├── outputs.tf
-│   ├── variables.tf
-│   └── versions.tf
-├── envs/
-│   ├── dev/                   # 개발 환경 (단일 AZ + RDS PostgreSQL)
-│   │   ├── backend.tf
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   ├── outputs.tf
-│   │   ├── terraform.tfvars
-│   │   ├── versions.tf
-│   │   └── README.md
-│   └── prod/                  # 운영 환경 (멀티 AZ + Aurora PostgreSQL)
-│       ├── backend.tf
-│       ├── main.tf
-│       ├── variables.tf
-│       ├── outputs.tf
-│       ├── terraform.tfvars
-│       └── versions.tf
-├── global/
-│   ├── ecr/                   # ECR 리포지토리 (6개 서비스)
-│   │   ├── backend.tf
-│   │   ├── main.tf
-│   │   └── versions.tf
-│   └── route53-acm/           # Route53 + ACM 인증서
-│       ├── backend.tf
-│       ├── main.tf
-│       ├── outputs.tf
-│       └── versions.tf
-├── modules/
-│   ├── vpc/                   # VPC 및 서브넷 (3-Tier)
-│   ├── security-groups/       # 보안 그룹 (ALB/ECS/DB/Cache/Kafka)
-│   ├── alb/                   # Application Load Balancer
-│   ├── elasticache/           # Valkey 8.0 클러스터 (Redis 호환)
-│   ├── rds/                   # RDS PostgreSQL (Dev용)
-│   ├── aurora/                # Aurora PostgreSQL (Prod용)
-│   ├── iam/                   # IAM 역할 (ECS Task, Auto Scaling)
-│   ├── ecs/                   # ECS Fargate (7개 마이크로서비스)
-│   ├── cloudmap/              # Service Discovery
-│   ├── ec2-kafka/             # EC2 Kafka KRaft 클러스터
-│   └── ecr/                   # ECR 리포지토리
-├── templates/
-│   └── versions.tf
-└── README.md
+popcorn-terraform-feature/
+├── bootstrap/              # 초기 설정 (S3 백엔드, DynamoDB 락)
+├── global/                 # 글로벌 리소스 (Route53, ECR)
+├── envs/                   # 환경별 설정
+│   ├── dev/               # 개발 환경
+│   └── prod/              # 프로덕션 환경
+├── modules/               # 재사용 가능한 Terraform 모듈
+│   ├── vpc/
+│   ├── ecs/
+│   ├── rds/
+│   ├── elasticache/
+│   ├── alb/
+│   ├── ec2-kafka/
+│   ├── cloudmap/
+│   ├── iam/
+│   ├── security-groups/
+│   ├── monitoring/        # 통합 모니터링 모듈
+│   └── xray/             # X-Ray 분산 추적
+├── docs/                  # 문서
+│   ├── MONITORING.md      # 모니터링 가이드
+│   └── CLOUDWATCH_SETUP.md # CloudWatch 설정 가이드
+└── scripts/               # 유틸리티 스크립트
 ```
 
-## 🏗️ 현재 구성된 리소스
+## 환경별 구성
 
-### ✅ **완성된 모듈들**
+### 개발 환경 (dev)
+- **목적**: 개발 및 테스트
+- **특징**: 단일 AZ, 최소 리소스, 비용 최적화
+- **모니터링**: 기본 로그 수집, 7일 보존
 
-#### **기본 인프라**
-- **VPC**: 3-Tier 아키텍처 (Public/App/Data 서브넷)
-- **Security Groups**: 계층별 보안 그룹 (ALB/ECS/DB/Cache/Kafka)
-- **ALB**: HTTPS 리다이렉트, Path 기반 라우팅
-- **ElastiCache**: Valkey 8.0 클러스터 (Redis 호환 캐싱)
+### 프로덕션 환경 (prod)
+- **목적**: 실제 서비스 운영
+- **특징**: Multi-AZ, 고가용성, 성능 최적화
+- **모니터링**: 전체 모니터링, 30일 보존
 
-#### **데이터베이스** (환경별 분리)
-- **RDS PostgreSQL**: Dev 환경용 (단일 인스턴스, db.t3.micro)
-- **Aurora PostgreSQL**: Prod 환경용 (클러스터, Auto Scaling)
+## 시작하기
 
-#### **컨테이너 플랫폼**
-- **ECS Fargate**: 6개 마이크로서비스 배포
-- **CloudMap**: 서비스 디스커버리 (DNS 기반)
-- **IAM**: ECS Task 실행 및 애플리케이션 권한
+### 사전 요구사항
 
-#### **메시징**
-- **EC2 Kafka**: KRaft 모드 (ZooKeeper 없음)
-  - Dev: 단일 노드 (t3.micro)
-  - Prod: 3노드 클러스터 (t3.small)
+1. **AWS CLI 설정**
+   ```bash
+   aws configure
+   ```
 
-#### **전역 리소스**
-- **ECR**: 7개 서비스용 컨테이너 레지스트리
-- **Route53 + ACM**: 도메인 및 SSL 인증서 (통합 관리)
+2. **Terraform 설치** (v1.0+)
+   ```bash
+   # macOS
+   brew install terraform
+   
+   # 또는 직접 다운로드
+   # https://www.terraform.io/downloads.html
+   ```
 
-### 🎯 **마이크로서비스 구성**
+3. **필요한 권한**
+   - EC2, VPC, RDS, ECS, ElastiCache 관리 권한
+   - CloudWatch, SNS 관리 권한
+   - S3, DynamoDB 접근 권한
 
-| 서비스 | 역할 | 포트 | 연결 |
-|--------|------|------|------|
-| **api-gateway** | Spring Cloud Gateway | 8080 | ALB 연결 |
-| **user-service** | 사용자 관리 | 8080 | DB 연결 |
-| **store-service** | 팝업 스토어 관리 | 8080 | DB 연결 |
-| **order-service** | 주문 처리 | 8080 | DB + Kafka |
-| **payment-service** | 결제 처리 | 8080 | DB + Kafka |
-| **checkin-service** | 체크인/QR 코드 관리 | 8080 | DB 연결 |
-| **order-query** | 주문 조회 서비스 | 8080 | DB 연결 |
+### 초기 설정
 
-## 🚀 빠른 시작
+1. **백엔드 초기화**
+   ```bash
+   cd bootstrap
+   terraform init
+   terraform apply
+   ```
 
-### 1. **Global 리소스 배포** (최초 1회)
-```bash
-# ECR 리포지토리 생성
-cd global/ecr
-terraform init && terraform apply
+2. **글로벌 리소스 생성**
+   ```bash
+   cd global/route53-acm
+   terraform init
+   terraform apply
+   
+   cd ../ecr
+   terraform init
+   terraform apply
+   ```
 
-# Route53 + ACM 인증서 생성
-cd ../route53-acm
-terraform init && terraform apply
-```
+### 환경 배포
 
-### 2. **개발 환경 배포**
+#### 개발 환경 배포
 ```bash
 cd envs/dev
-
-# terraform.tfvars 수정 (ECR URL, 키페어 이름 등)
-cp terraform.tfvars.example terraform.tfvars
-vim terraform.tfvars
-
-# 배포 실행
 terraform init
 terraform plan
 terraform apply
 ```
 
-### 3. **컨테이너 이미지 배포**
-```bash
-# ECR 로그인
-aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin <ECR_URL>
-
-# 각 서비스 이미지 빌드 및 푸시
-for service in api-gateway user-service store-service order-service payment-service checkin-service order-query; do
-  docker build -t $service .
-  docker tag $service:latest <ECR_URL>/goorm-popcorn-dev/$service:latest
-  docker push <ECR_URL>/goorm-popcorn-dev/$service:latest
-done
-```
-
-## 📊 환경별 비용 분석
-
-### **Dev 환경** (~$125/월)
-| 서비스 | 스펙 | 비용 |
-|--------|------|------|
-| RDS PostgreSQL | db.t4g.micro | $13 |
-| ECS Fargate | 7 tasks × 256 CPU | $45 |
-| EC2 Kafka | t3.small | $17 |
-| ElastiCache Valkey | cache.t4g.micro | $12 |
-| ALB + NAT Gateway | - | $38 |
-
-### **Prod 환境** (~$520/월)
-| 서비스 | 스펙 | 비용 |
-|--------|------|------|
-| Aurora PostgreSQL | 3 × db.r6g.large | $200 |
-| ECS Fargate | 14 tasks × 512 CPU | $150 |
-| EC2 Kafka | 3 × t3.medium | $25 |
-| ElastiCache Valkey | cache.t4g.small (Primary+Replica) | $47 |
-| ALB + NAT Gateway | - | $98 |
-
-## 🔧 주요 특징
-
-### **비용 최적화**
-- **Dev**: 단일 AZ, 최소 인스턴스 타입
-- **Fargate Spot**: 40% 비용 절감 (Prod에서 활용)
-- **VPC Endpoints**: NAT Gateway 비용 58% 절감 (향후 적용)
-
-### **고가용성** (Prod)
-- **Multi-AZ**: 3개 가용 영역 분산
-- **Auto Scaling**: ECS, Aurora 자동 확장
-- **Health Check**: ALB, ECS, CloudMap 통합
-
-### **보안**
-- **Private Subnets**: 모든 애플리케이션 리소스
-- **Secrets Manager**: 데이터베이스 비밀번호 관리
-- **Security Groups**: 최소 권한 원칙
-- **Valkey 암호화**: 저장 시 암호화 (전 환경), 전송 시 암호화 (Prod)
-
-### **모니터링**
-- **CloudWatch**: 통합 로그 및 메트릭
-- **Container Insights**: ECS 클러스터 모니터링
-- **Performance Insights**: Aurora 성능 분석
-- **ElastiCache Metrics**: Valkey 성능 및 메모리 사용률 추적
-
-## 🚀 Valkey 8.0 주요 특징
-
-### **성능 향상**
-- **처리량**: Redis 대비 최대 2배 RPS 향상
-- **메모리 효율성**: 향상된 메모리 관리 알고리즘
-- **네트워크 최적화**: 더 빠른 데이터 전송 및 복제
-
-### **호환성**
-- **Redis 호환**: 기존 Redis 명령어 100% 호환
-- **클라이언트 라이브러리**: 기존 Redis 클라이언트 그대로 사용
-- **애플리케이션**: 코드 변경 없이 마이그레이션 가능
-
-### **환경별 최적화**
-| 환경 | 노드 타입 | 구성 | 암호화 | 백업 |
-|------|-----------|------|--------|------|
-| **Dev** | cache.t4g.micro | 단일 노드 | 저장 시만 | 1일 |
-| **Prod** | cache.t4g.small | Primary+Replica | 저장+전송 | 7일 |
-
-## 🔗 서비스 연결 구조
-
-```
-Internet → ALB → API Gateway (ECS)
-                      ↓
-              Service Discovery (CloudMap)
-                      ↓
-    ┌─────────────────┼─────────────────┐
-    ↓                 ↓                 ↓
-User Service    Store Service    Order Service
-    ↓                 ↓                 ↓
-Payment Service  Checkin Service  Order Query
-    ↓                 ↓                 ↓
-    └─────────────────┼─────────────────┘
-                      ↓
-              RDS/Aurora PostgreSQL
-                      ↓
-            ElastiCache Valkey 8.0
-                      ↓
-                  EC2 Kafka
-```
-
-## 📋 GitHub Actions (CI/CD)
-- PR(`develop`/`main`)에서 `terraform plan` 실행 후 PR 코멘트로 출력
-- `develop` 머지 시 dev 환경 `terraform apply`
-- `main` 머지 시 prod 환경 `terraform apply`
-- Discord Webhook으로 plan/apply 결과 알림 전송
-
-## 📚 문서
-
-- **[개발 환경 구성 가이드](docs/dev-environment-guide.md)**: 전체 개발 환경 구성 방법
-- **[EC2 Kafka 모듈 가이드](docs/ec2-kafka-module-guide.md)**: Kafka 클러스터 상세 가이드
-- **[ElastiCache Valkey 마이그레이션 가이드](docs/ELASTICACHE_VALKEY_MIGRATION.md)**: Redis → Valkey 8.0 마이그레이션
-- **[각 환경별 README](envs/dev/README.md)**: 환경별 배포 및 운영 가이드
-
-## 🔄 업데이트 로그
-
-### 2026-01-27
-- ✅ **ElastiCache 엔진 변경**: Redis 7.0 → Valkey 8.0
-- ✅ **비용 최적화**: Prod ElastiCache 비용 효율적 구성 (cache.t4g.small)
-- ✅ **서비스명 업데이트**: qr-service → checkin-service, order-query 추가
-- ✅ **고가용성 강화**: Prod 환경 Primary+Replica 구성
-- ✅ **보안 강화**: Prod 환경 전송 암호화 활성화
-- ✅ **구조 최적화**: Route53-ACM 모듈 통합 (중복 제거)
-- ✅ **마이그레이션 가이드**: Valkey 전환 상세 문서 작성
-
-### 2024-01-23
-- ✅ 스펙 변경: Dev(단일 AZ + RDS), Prod(멀티 AZ + Aurora)
-- ✅ Staging 환경 제거
-- ✅ RDS PostgreSQL 모듈 추가 (Dev용)
-- ✅ Aurora PostgreSQL 모듈 추가 (Prod용)
-- ✅ ECS Fargate 모듈 추가 (6개 마이크로서비스)
-- ✅ CloudMap 서비스 디스커버리 모듈 추가
-- ✅ IAM 역할 모듈 추가
-- ✅ 환경별 설정 파일 업데이트
-- ✅ 상세 배포 가이드 문서 작성
-이미 생성되어 있다면 팀원들은 이 단계 없이 진행합니다.
-
-2) 환경별 backend 설정 파일
-- `envs/dev/backend.tf`
-- `envs/prod/backend.tf`
-- `global/route53-acm/backend.tf`
-- `global/ecr/backend.tf`
-
-## 실행 흐름
-1) global 스택 (전역 리소스)
-```bash
-cd global/route53-acm
-terraform init
-terraform plan
-terraform apply
-```
-
-```bash
-cd global/ecr
-terraform init
-terraform plan
-terraform apply
-```
-
-2) dev 스택
-```bash
-cd envs/dev
-cp terraform.tfvars.example terraform.tfvars
-terraform init
-terraform plan
-terraform apply
-```
-
-3) prod 스택
+#### 프로덕션 환경 배포
 ```bash
 cd envs/prod
-cp terraform.tfvars.example terraform.tfvars
 terraform init
 terraform plan
 terraform apply
 ```
 
-## 환경별 차이 (예시 기준)
-dev와 prod는 동일한 모듈을 쓰고, 환경별 값만 다르게 적용합니다.
+## 모니터링 설정
 
-- NAT Gateway 수: dev 1개(또는 미도입) / prod 2개(AZ별)
-- Aurora 인스턴스 수: dev 최소 1 / prod 2 이상
-- ElastiCache 노드 수: dev 1 / prod 2 이상
-- Auto Scaling: dev 최소/비활성화 / prod 활성
+### 현재 모니터링 상태
 
-## 참고
-- `terraform.tfstate`는 커밋하지 않습니다.
-- 실행 시 `AWS_PROFILE=terraform` 사용을 권장합니다.
+| 서비스 | 로그 수집 | 메트릭 | 알람 | 대시보드 |
+|--------|-----------|--------|------|----------|
+| ECS Fargate | ✅ | ✅ | ✅ | ✅ |
+| RDS PostgreSQL | ✅ | ✅ | ⚠️ | ✅ |
+| EC2 Kafka | ✅ | ⚠️ | ❌ | ⚠️ |
+| ALB | ❌ | ✅ | ❌ | ⚠️ |
+| ElastiCache | ❌ | ✅ | ❌ | ⚠️ |
+| VPC | ❌ | ⚠️ | ❌ | ❌ |
+
+### 추가 모니터링 활성화
+
+자세한 설정 방법은 [CloudWatch 설정 가이드](docs/CLOUDWATCH_SETUP.md)를 참조하세요.
+
+#### 기본 모니터링 추가
+```bash
+# terraform.tfvars에 추가
+alert_email_addresses = ["admin@yourcompany.com"]
+enable_alb_access_logs = true
+enable_vpc_flow_logs = true
+```
+
+#### 통합 모니터링 모듈 활성화
+```hcl
+# main.tf에 추가
+module "monitoring" {
+  source = "../../modules/monitoring"
+  
+  name                    = var.name
+  region                  = var.region
+  alert_email_addresses  = var.alert_email_addresses
+  
+  # 기존 리소스 연결
+  alb_arn_suffix         = module.alb.alb_arn_suffix
+  rds_instance_id        = module.rds.instance_id
+  elasticache_cluster_id = module.elasticache.cluster_id
+  
+  tags = var.tags
+}
+```
+
+## 주요 명령어
+
+### Terraform 기본 명령어
+```bash
+# 초기화
+terraform init
+
+# 계획 확인
+terraform plan
+
+# 배포
+terraform apply
+
+# 특정 리소스만 배포
+terraform apply -target=module.monitoring
+
+# 리소스 삭제
+terraform destroy
+
+# 상태 확인
+terraform show
+
+# 출력 값 확인
+terraform output
+```
+
+### AWS CLI 유틸리티
+```bash
+# ECS 서비스 상태 확인
+aws ecs describe-services --cluster goorm-popcorn-dev-cluster --services goorm-popcorn-dev-api-gateway
+
+# RDS 인스턴스 상태 확인
+aws rds describe-db-instances --db-instance-identifier goorm-popcorn-dev-postgres
+
+# CloudWatch 로그 확인
+aws logs describe-log-groups --log-group-name-prefix "/aws/ecs/goorm-popcorn"
+
+# 알람 상태 확인
+aws cloudwatch describe-alarms --alarm-name-prefix "goorm-popcorn-dev"
+```
+
+## 보안 고려사항
+
+### 네트워크 보안
+- 모든 데이터베이스는 private 서브넷에 배치
+- Security Group으로 최소 권한 원칙 적용
+- VPC Flow Logs로 네트워크 트래픽 모니터링
+
+### 데이터 보안
+- RDS 암호화 활성화
+- ElastiCache 저장 시 암호화
+- Secrets Manager로 민감 정보 관리
+
+### 접근 제어
+- IAM 역할 기반 최소 권한 부여
+- ECS Exec을 통한 안전한 컨테이너 접근
+- CloudTrail로 API 호출 감사
+
+## 비용 최적화
+
+### 개발 환경 최적화
+- Spot 인스턴스 활용 (ECS Fargate Spot)
+- 단일 AZ 배포로 NAT Gateway 비용 절약
+- 짧은 로그 보존 기간 (7일)
+- 최소 인스턴스 타입 사용
+
+### 모니터링 비용 관리
+- 불필요한 메트릭 비활성화
+- 로그 필터링으로 저장 용량 최적화
+- S3 Lifecycle 정책으로 오래된 로그 자동 삭제
+
+## 문제 해결
+
+### 일반적인 문제
+
+#### Terraform 상태 잠금
+```bash
+# DynamoDB 테이블에서 잠금 해제
+aws dynamodb delete-item --table-name terraform-locks --key '{"LockID":{"S":"your-lock-id"}}'
+```
+
+#### ECS 서비스 배포 실패
+```bash
+# 서비스 이벤트 확인
+aws ecs describe-services --cluster your-cluster --services your-service --query 'services[0].events'
+
+# 태스크 정의 확인
+aws ecs describe-task-definition --task-definition your-task-definition
+```
+
+#### RDS 연결 문제
+```bash
+# 보안 그룹 규칙 확인
+aws ec2 describe-security-groups --group-ids sg-xxxxxxxxx
+
+# 서브넷 그룹 확인
+aws rds describe-db-subnet-groups --db-subnet-group-name your-subnet-group
+```
+
+## 기여 가이드
+
+### 코드 스타일
+- Terraform 표준 포맷팅 사용: `terraform fmt`
+- 변수와 출력에 설명 추가
+- 태그 일관성 유지
+
+### 변경 사항 제출
+1. 기능 브랜치 생성
+2. 변경 사항 구현
+3. `terraform validate` 및 `terraform plan` 실행
+4. Pull Request 생성
+5. 코드 리뷰 후 병합
+
+## 연락처
+
+- **개발팀**: dev@yourcompany.com
+- **DevOps팀**: devops@yourcompany.com
+- **문의사항**: 이슈 트래커 활용
+
+## 라이선스
+
+이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
