@@ -244,6 +244,14 @@ resource "aws_ecs_service" "services" {
     Name    = "${var.name}-${each.key}-service"
     Service = each.key
   })
+
+  # CI/CD가 배포/스케일을 관리할 때 드리프트 방지
+  lifecycle {
+    ignore_changes = [
+      task_definition,
+      desired_count
+    ]
+  }
 }
 
 # Auto Scaling Targets
