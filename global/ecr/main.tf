@@ -10,6 +10,7 @@ resource "aws_ecr_repository" "repositories" {
     "goorm-popcorn-store",
     "goorm-popcorn-order",
     "goorm-popcorn-payment",
+    "goorm-popcorn-payment-front",
     "goorm-popcorn-checkin",
     "goorm-popcorn-order-query"
   ])

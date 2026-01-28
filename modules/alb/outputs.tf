@@ -19,6 +19,11 @@ output "target_group_arn" {
   value = aws_lb_target_group.gateway.arn
 }
 
+output "payment_front_target_group_arn" {
+  description = "Payment front target group ARN"
+  value       = aws_lb_target_group.payment_front.arn
+}
+
 output "listener_arn" {
   value = aws_lb_listener.https.arn
 }

@@ -66,6 +66,8 @@ resource "aws_cloudwatch_dashboard" "main" {
             ["AWS/ECS", "CPUUtilization", "ServiceName", "${var.name}-api-gateway", "ClusterName", "${var.name}-cluster"],
             [".", "MemoryUtilization", ".", ".", ".", "."],
             [".", "CPUUtilization", "ServiceName", "${var.name}-user-service", "ClusterName", "${var.name}-cluster"],
+            [".", "MemoryUtilization", ".", ".", ".", "."],
+            [".", "CPUUtilization", "ServiceName", "${var.name}-payment-front", "ClusterName", "${var.name}-cluster"],
             [".", "MemoryUtilization", ".", ".", ".", "."]
           ]
           view    = "timeSeries"

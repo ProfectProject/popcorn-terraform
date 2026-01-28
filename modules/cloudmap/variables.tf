@@ -19,7 +19,7 @@ variable "namespace_name" {
 variable "service_names" {
   description = "List of service names to register"
   type        = list(string)
-  default     = ["api-gateway", "user-service", "store-service", "order-service", "payment-service", "checkin-service", "order-query"]
+  default     = ["api-gateway", "user-service", "store-service", "order-service", "payment-service", "payment-front", "checkin-service", "order-query"]
 }
 
 variable "health_check_grace_period" {

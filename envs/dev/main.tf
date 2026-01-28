@@ -187,8 +187,9 @@ module "ecs" {
   ecs_task_role_arn           = module.iam.ecs_task_role_arn
 
   # ALB 연결 - Route53 트래픽 수신용
-  alb_target_group_arn = module.alb.target_group_arn
-  alb_listener_arn     = module.alb.listener_arn
+  alb_target_group_arn           = module.alb.target_group_arn
+  payment_front_target_group_arn = module.alb.payment_front_target_group_arn
+  alb_listener_arn               = module.alb.listener_arn
 
   # ECR 설정 (Global ECR 리포지토리 사용)
   ecr_repository_url = try(data.terraform_remote_state.global_ecr.outputs.repository_url, var.ecr_repository_url)
