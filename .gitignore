@@ -16,3 +16,8 @@ terraform.rc
 !envs/*/terraform.tfvars.json.example
 .docs/
 docs/
+
+# macOS
+.DS_Store
+*/.DS_Store
+**/.DS_Store

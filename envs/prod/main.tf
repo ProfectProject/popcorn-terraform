@@ -27,13 +27,13 @@ data "terraform_remote_state" "global_ecr" {
 module "vpc" {
   source = "../../modules/vpc"
 
-  name                = var.vpc_name
-  cidr                = var.vpc_cidr
-  public_subnets      = var.public_subnets
-  private_subnets     = var.private_subnets
-  data_subnets        = var.data_subnets
-  enable_nat          = var.enable_nat
-  single_nat_gateway  = var.single_nat_gateway
+  name               = var.vpc_name
+  cidr               = var.vpc_cidr
+  public_subnets     = var.public_subnets
+  private_subnets    = var.private_subnets
+  data_subnets       = var.data_subnets
+  enable_nat         = var.enable_nat
+  single_nat_gateway = var.single_nat_gateway
 }
 
 module "security_groups" {
@@ -57,13 +57,13 @@ module "alb" {
 
 # Route53 레코드 추가
 resource "aws_route53_record" "prod" {
-  zone_id = "Z00594183MIRRC8JIBDYS"  # goormpopcorn.shop 호스팅 영역 ID
+  zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
   name    = "goormpopcorn.shop"
   type    = "A"
 
   alias {
-    name                   = module.alb.dns_name
-    zone_id                = module.alb.zone_id
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
     evaluate_target_health = true
   }
 }
@@ -79,13 +79,13 @@ module "elasticache" {
   num_cache_clusters         = var.elasticache_num_cache_clusters
   automatic_failover_enabled = var.elasticache_automatic_failover
   multi_az_enabled           = var.elasticache_multi_az_enabled
-  
+
   # Prod 환경 보안 및 백업 설정
-  transit_encryption_enabled = true   # 프로덕션에서는 보안 우선
-  apply_immediately         = false   # 유지보수 창에서 적용
-  snapshot_retention_limit  = 7       # 7일 백업 보존
-  snapshot_window          = "02:00-04:00"
-  maintenance_window       = "sun:04:00-sun:06:00"
+  transit_encryption_enabled = true  # 프로덕션에서는 보안 우선
+  apply_immediately          = false # 유지보수 창에서 적용
+  snapshot_retention_limit   = 7     # 7일 백업 보존
+  snapshot_window            = "02:00-04:00"
+  maintenance_window         = "sun:04:00-sun:06:00"
 
   tags = var.tags
 }
@@ -168,7 +168,7 @@ module "ecs" {
 
   # IAM 역할
   ecs_task_execution_role_arn = module.iam.ecs_task_execution_role_arn
-  ecs_task_role_arn          = module.iam.ecs_task_role_arn
+  ecs_task_role_arn           = module.iam.ecs_task_role_arn
 
   # ALB 연결
   alb_target_group_arn = module.alb.target_group_arn
@@ -177,7 +177,7 @@ module "ecs" {
   # ECR 설정 (Global ECR 리포지토리 사용)
   ecr_repository_url = try(data.terraform_remote_state.global_ecr.outputs.repository_url, var.ecr_repository_url)
   ecr_repositories   = var.ecr_repositories
-  image_tag         = var.image_tag
+  image_tag          = var.image_tag
 
   # 서비스 디스커버리
   service_discovery_service_arns = module.cloudmap.service_arns
@@ -185,11 +185,11 @@ module "ecs" {
   # 외부 서비스 연결
   elasticache_primary_endpoint = module.elasticache.primary_endpoint
   elasticache_reader_endpoint  = module.elasticache.reader_endpoint
-  database_endpoint           = module.aurora.cluster_endpoint
-  database_port              = module.aurora.port
-  database_name              = module.aurora.database_name
-  database_secret_arn        = module.aurora.master_password_secret_arn
-  kafka_bootstrap_servers    = module.ec2_kafka.bootstrap_servers
+  database_endpoint            = module.aurora.cluster_endpoint
+  database_port                = module.aurora.port
+  database_name                = module.aurora.database_name
+  database_secret_arn          = module.aurora.master_password_secret_arn
+  kafka_bootstrap_servers      = module.ec2_kafka.bootstrap_servers
 
   # 로그 설정
   log_retention_days = var.ecs_log_retention_days
