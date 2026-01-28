@@ -2,6 +2,11 @@ output "replication_group_id" {
   value = aws_elasticache_replication_group.this.id
 }
 
+output "cluster_id" {
+  description = "ElastiCache cluster ID for CloudWatch metrics"
+  value       = aws_elasticache_replication_group.this.id
+}
+
 output "primary_endpoint" {
   value = aws_elasticache_replication_group.this.primary_endpoint_address
 }

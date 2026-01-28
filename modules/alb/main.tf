@@ -6,6 +6,16 @@ resource "aws_lb" "this" {
   subnets         = var.public_subnet_ids
   security_groups = [var.security_group_id]
 
+  # 액세스 로그 설정 (선택적)
+  dynamic "access_logs" {
+    for_each = var.enable_access_logs ? [1] : []
+    content {
+      bucket  = var.access_logs_bucket
+      prefix  = var.access_logs_prefix
+      enabled = true
+    }
+  }
+
   tags = var.tags
 }
 
@@ -26,6 +36,29 @@ resource "aws_lb_target_group" "gateway" {
   }
 
   tags = var.tags
+}
+
+# Payment Front Target Group
+resource "aws_lb_target_group" "payment_front" {
+  name        = "${substr(var.name, 0, 20)}-pay-front"
+  port        = 3000
+  protocol    = "HTTP"
+  vpc_id      = var.vpc_id
+  target_type = "ip"
+
+  health_check {
+    path                = "/health"
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    timeout             = 5
+    interval            = 30
+    matcher             = "200-399"
+    port                = "3000"
+  }
+
+  tags = merge(var.tags, {
+    Name = "${var.name}-payment-front-tg"
+  })
 }
 
 resource "aws_lb_listener" "http" {
@@ -55,4 +88,25 @@ resource "aws_lb_listener" "https" {
     type             = "forward"
     target_group_arn = aws_lb_target_group.gateway.arn
   }
+}
+
+# Payment Front Listener Rule
+resource "aws_lb_listener_rule" "payment_front" {
+  listener_arn = aws_lb_listener.https.arn
+  priority     = 100
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.payment_front.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/payment/*", "/pay/*"]
+    }
+  }
+
+  tags = merge(var.tags, {
+    Name = "${var.name}-payment-front-rule"
+  })
 }

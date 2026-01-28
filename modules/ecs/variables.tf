@@ -53,6 +53,12 @@ variable "alb_target_group_arn" {
   default     = null
 }
 
+variable "payment_front_target_group_arn" {
+  description = "ARN of the payment front ALB target group"
+  type        = string
+  default     = null
+}
+
 variable "alb_listener_arn" {
   description = "ARN of the ALB listener"
   type        = string
@@ -91,7 +97,7 @@ variable "log_retention_days" {
 variable "service_names" {
   description = "List of service names"
   type        = list(string)
-  default     = ["api-gateway", "user-service", "store-service", "order-service", "payment-service", "qr-service"]
+  default     = ["api-gateway", "user-service", "store-service", "order-service", "payment-service", "payment-front", "checkin-service", "order-query"]
 }
 
 variable "services" {
@@ -186,7 +192,37 @@ variable "services" {
         }
       ]
     }
-    "qr-service" = {
+    "payment-front" = {
+      cpu                   = 256
+      memory               = 512
+      desired_count        = 1
+      min_capacity         = 1
+      max_capacity         = 2
+      cpu_target_value     = 70
+      memory_target_value  = 80
+      environment_variables = [
+        {
+          name  = "NODE_ENV"
+          value = "development"
+        }
+      ]
+    }
+    "checkin-service" = {
+      cpu                   = 256
+      memory               = 512
+      desired_count        = 1
+      min_capacity         = 1
+      max_capacity         = 2
+      cpu_target_value     = 70
+      memory_target_value  = 80
+      environment_variables = [
+        {
+          name  = "SPRING_PROFILES_ACTIVE"
+          value = "dev"
+        }
+      ]
+    }
+    "order-query" = {
       cpu                   = 256
       memory               = 512
       desired_count        = 1

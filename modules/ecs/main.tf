@@ -113,7 +113,7 @@ resource "aws_ecs_task_definition" "services" {
 
       portMappings = [
         {
-          containerPort = 8080
+          containerPort = each.key == "payment-front" ? 3000 : 8080
           protocol      = "tcp"
         }
       ]
@@ -173,7 +173,10 @@ resource "aws_ecs_task_definition" "services" {
       }
 
       healthCheck = {
-        command = [
+        command = each.key == "payment-front" ? [
+          "CMD-SHELL",
+          "curl -f http://localhost:3000/health || exit 1"
+        ] : [
           "CMD-SHELL",
           "curl -f http://localhost:8080/actuator/health || exit 1"
         ]
@@ -226,6 +229,15 @@ resource "aws_ecs_service" "services" {
       target_group_arn = var.alb_target_group_arn
       container_name   = each.key
       container_port   = 8080
+    }
+  }
+
+  dynamic "load_balancer" {
+    for_each = each.key == "payment-front" && var.payment_front_target_group_arn != null ? [1] : []
+    content {
+      target_group_arn = var.payment_front_target_group_arn
+      container_name   = each.key
+      container_port   = 3000
     }
   }
 
