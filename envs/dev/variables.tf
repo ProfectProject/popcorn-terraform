@@ -64,7 +64,7 @@ variable "alb_target_group_port" {
 
 variable "alb_health_check_path" {
   type    = string
-  default = "/health"
+  default = "/actuator/health"
 }
 
 variable "elasticache_name" {

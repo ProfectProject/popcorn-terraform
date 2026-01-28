@@ -1,5 +1,6 @@
 # popcorn-terraform
 
+
 Goorm Popcorn 프로젝트의 AWS 인프라를 Terraform으로 관리합니다.
 
 ## 🎯 변경된 스펙 (2026-01-27)
