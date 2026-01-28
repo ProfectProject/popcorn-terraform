@@ -29,7 +29,7 @@ variable "target_group_port" {
 
 variable "health_check_path" {
   type    = string
-  default = "/health"
+  default = "/actuator/health"
 }
 
 variable "tags" {
