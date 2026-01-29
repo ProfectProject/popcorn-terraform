@@ -34,6 +34,7 @@ module "vpc" {
   data_subnets       = var.data_subnets
   enable_nat         = var.enable_nat
   single_nat_gateway = var.single_nat_gateway
+  enable_vpc_endpoints = var.enable_vpc_endpoints
 }
 
 module "security_groups" {

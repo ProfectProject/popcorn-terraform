@@ -44,6 +44,12 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+
+variable "enable_vpc_endpoints" {
+  description = "Enable VPC endpoints for core AWS services (ECR, Logs, SSM, Secrets Manager, S3)"
+  type        = bool
+  default     = false
+}
 # VPC Flow Logs 관련 변수
 variable "enable_flow_logs" {
   description = "Enable VPC Flow Logs"

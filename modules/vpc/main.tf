@@ -22,7 +22,18 @@ locals {
     for az, name in local.private_route_table_by_az :
     az => aws_route_table.private[name].id
   }
+  interface_vpc_endpoints = var.enable_vpc_endpoints ? {
+    ecr_api       = "com.amazonaws.${data.aws_region.current.name}.ecr.api"
+    ecr_dkr       = "com.amazonaws.${data.aws_region.current.name}.ecr.dkr"
+    logs          = "com.amazonaws.${data.aws_region.current.name}.logs"
+    secretsmanager = "com.amazonaws.${data.aws_region.current.name}.secretsmanager"
+    ssm           = "com.amazonaws.${data.aws_region.current.name}.ssm"
+    ssmmessages   = "com.amazonaws.${data.aws_region.current.name}.ssmmessages"
+    ec2messages   = "com.amazonaws.${data.aws_region.current.name}.ec2messages"
+  } : {}
 }
+
+data "aws_region" "current" {}
 
 resource "aws_vpc" "this" {
   cidr_block           = var.cidr
@@ -152,4 +163,55 @@ resource "aws_route_table_association" "data" {
   for_each       = aws_subnet.data
   subnet_id      = each.value.id
   route_table_id = aws_route_table.data.id
+}
+
+resource "aws_security_group" "vpc_endpoints" {
+  count = var.enable_vpc_endpoints ? 1 : 0
+
+  name        = "${var.name}-sg-vpce"
+  description = "VPC endpoints interface access"
+  vpc_id      = aws_vpc.this.id
+
+  ingress {
+    description = "VPC to interface endpoints"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [var.cidr]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.base_tags, { Name = "${var.name}-sg-vpce" })
+}
+
+resource "aws_vpc_endpoint" "interface" {
+  for_each = local.interface_vpc_endpoints
+
+  vpc_id              = aws_vpc.this.id
+  service_name        = each.value
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = [for subnet in aws_subnet.private : subnet.id]
+  security_group_ids  = [aws_security_group.vpc_endpoints[0].id]
+  private_dns_enabled = true
+
+  tags = merge(local.base_tags, {
+    Name = "${var.name}-vpce-${each.key}"
+  })
+}
+
+resource "aws_vpc_endpoint" "s3" {
+  count = var.enable_vpc_endpoints ? 1 : 0
+
+  vpc_id            = aws_vpc.this.id
+  service_name      = "com.amazonaws.${data.aws_region.current.name}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = concat([aws_route_table.data.id], [for _, rt in aws_route_table.private : rt.id])
+
+  tags = merge(local.base_tags, { Name = "${var.name}-vpce-s3" })
 }

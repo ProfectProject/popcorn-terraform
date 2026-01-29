@@ -49,6 +49,11 @@ variable "single_nat_gateway" {
   default = false
 }
 
+variable "enable_vpc_endpoints" {
+  type    = bool
+  default = false
+}
+
 variable "alb_name" {
   type = string
 }

@@ -44,6 +44,7 @@ sg_name = "goorm-popcorn-dev"
 
 enable_nat         = true
 single_nat_gateway = true
+enable_vpc_endpoints = true
 
 alb_name              = "goorm-popcorn-alb-dev"
 alb_target_group_name = "goorm-popcorn-gateway-dev"
