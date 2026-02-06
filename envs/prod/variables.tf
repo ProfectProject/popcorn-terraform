@@ -102,29 +102,39 @@ variable "iam_name" {
   type = string
 }
 
-# Aurora 관련 변수
-variable "aurora_name" {
+# EKS 관련 변수
+variable "eks_name" {
   type = string
 }
 
-variable "aurora_instance_class" {
+variable "eks_cluster_version" {
   type    = string
-  default = "db.r6g.large"
+  default = "1.35"
 }
 
-variable "aurora_backup_retention_period" {
+variable "eks_node_instance_types" {
+  type    = list(string)
+  default = ["t3.medium", "t3.large"]
+}
+
+variable "eks_node_capacity_type" {
+  type    = string
+  default = "ON_DEMAND"
+}
+
+variable "eks_node_min_size" {
   type    = number
-  default = 7
+  default = 3
 }
 
-variable "aurora_preferred_backup_window" {
-  type    = string
-  default = "03:00-04:00"
+variable "eks_node_max_size" {
+  type    = number
+  default = 20
 }
 
-# ECS 관련 변수
-variable "ecs_name" {
-  type = string
+variable "eks_node_desired_size" {
+  type    = number
+  default = 6
 }
 
 variable "ecr_repository_url" {
@@ -143,38 +153,29 @@ variable "image_tag" {
   default     = "latest"
 }
 
-variable "ecs_log_retention_days" {
-  type    = number
-  default = 30
-}
-
-# CloudMap 관련 변수
-variable "cloudmap_name" {
+# RDS 관련 변수
+variable "rds_name" {
   type = string
 }
 
-variable "cloudmap_namespace" {
+variable "rds_instance_class" {
   type    = string
-  default = "goormpopcorn.local"
+  default = "db.t4g.small"
 }
 
-# EC2 Kafka 관련 변수
-variable "ec2_kafka_name" {
-  type = string
-}
-
-variable "ec2_kafka_instance_type" {
-  type    = string
-  default = "t3.medium"
-}
-
-variable "ec2_kafka_key_name" {
-  type = string
-}
-
-variable "ec2_kafka_node_count" {
+variable "rds_allocated_storage" {
   type    = number
-  default = 3
+  default = 100
+}
+
+variable "rds_backup_retention_period" {
+  type    = number
+  default = 7
+}
+
+variable "rds_engine_version" {
+  type    = string
+  default = "18.1"
 }
 
 # 공통 태그

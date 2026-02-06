@@ -127,9 +127,39 @@ variable "rds_engine_version" {
   default = "16.4"
 }
 
-# ECS 관련 변수
-variable "ecs_name" {
+# EKS 관련 변수
+variable "eks_name" {
   type = string
+}
+
+variable "eks_cluster_version" {
+  type    = string
+  default = "1.35"
+}
+
+variable "eks_node_instance_types" {
+  type    = list(string)
+  default = ["t3.medium"]
+}
+
+variable "eks_node_capacity_type" {
+  type    = string
+  default = "ON_DEMAND"
+}
+
+variable "eks_node_min_size" {
+  type    = number
+  default = 1
+}
+
+variable "eks_node_max_size" {
+  type    = number
+  default = 5
+}
+
+variable "eks_node_desired_size" {
+  type    = number
+  default = 2
 }
 
 variable "ecr_repository_url" {
@@ -146,45 +176,6 @@ variable "image_tag" {
   description = "Docker image tag to use"
   type        = string
   default     = "dev-latest"
-}
-
-variable "ecs_log_retention_days" {
-  type    = number
-  default = 7
-}
-
-# CloudMap 관련 변수
-variable "cloudmap_name" {
-  type = string
-}
-
-variable "cloudmap_namespace" {
-  type    = string
-  default = "goormpopcorn.local"
-}
-
-variable "cloudmap_dns_ttl" {
-  type    = number
-  default = 60
-}
-
-# EC2 Kafka 관련 변수
-variable "ec2_kafka_name" {
-  type = string
-}
-
-variable "ec2_kafka_instance_type" {
-  type    = string
-  default = "t3.micro"
-}
-
-variable "ec2_kafka_key_name" {
-  type = string
-}
-
-variable "ec2_kafka_node_count" {
-  type    = number
-  default = 1
 }
 
 # 공통 태그

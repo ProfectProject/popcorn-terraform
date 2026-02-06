@@ -55,10 +55,58 @@ module "alb" {
   health_check_path = var.alb_health_check_path
 }
 
-# Route53 레코드 추가
-resource "aws_route53_record" "prod" {
+# Route53 레코드 - 메인 도메인 및 서브도메인
+resource "aws_route53_record" "main" {
   zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
   name    = "goormpopcorn.shop"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "api" {
+  zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
+  name    = "api.goormpopcorn.shop"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "kafka" {
+  zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
+  name    = "kafka.goormpopcorn.shop"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "argocd" {
+  zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
+  name    = "argocd.goormpopcorn.shop"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "grafana" {
+  zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
+  name    = "grafana.goormpopcorn.shop"
   type    = "A"
 
   alias {
@@ -98,108 +146,62 @@ module "iam" {
   environment = "prod"
   region      = var.region
 
-  tags = var.tags
-}
-
-# Aurora PostgreSQL 모듈 (Prod 환경용)
-module "aurora" {
-  source = "../../modules/aurora"
-
-  name              = var.aurora_name
-  environment       = "prod"
-  subnet_ids        = values(module.vpc.data_subnet_ids)
-  security_group_id = module.security_groups.db_sg_id
-
-  # Prod 환경 Aurora 설정
-  instance_class          = var.aurora_instance_class
-  backup_retention_period = var.aurora_backup_retention_period
-  preferred_backup_window = var.aurora_preferred_backup_window
-  deletion_protection     = true
-  skip_final_snapshot     = false
+  # EKS 관련 IAM 역할 추가
+  enable_eks_roles = true
 
   tags = var.tags
 }
 
-# CloudMap 서비스 디스커버리 모듈
-module "cloudmap" {
-  source = "../../modules/cloudmap"
+# EKS 클러스터 모듈
+module "eks" {
+  source = "../../modules/eks"
 
-  name           = var.cloudmap_name
-  vpc_id         = module.vpc.vpc_id
-  namespace_name = var.cloudmap_namespace
-
-  tags = var.tags
-}
-
-# EC2 Kafka 모듈
-module "ec2_kafka" {
-  source = "../../modules/ec2-kafka"
-
-  name              = var.ec2_kafka_name
-  environment       = "prod"
-  node_count        = var.ec2_kafka_node_count
-  instance_type     = var.ec2_kafka_instance_type
-  key_name          = var.ec2_kafka_key_name
-  subnet_ids        = values(module.vpc.private_subnet_ids)
-  security_group_id = module.security_groups.kafka_sg_id
-
-  # IAM instance profile
-  iam_instance_profile = module.iam.ec2_ssm_instance_profile_name
-
-  # Prod 환경 설정
-  root_volume_size = 20
-  data_volume_size = 100
-
-  tags = var.tags
-}
-
-# ECS Fargate 모듈
-module "ecs" {
-  source = "../../modules/ecs"
-
-  name        = var.ecs_name
+  name        = var.eks_name
   environment = "prod"
   region      = var.region
   vpc_id      = module.vpc.vpc_id
 
   # 네트워크 설정
-  subnet_ids        = values(module.vpc.private_subnet_ids)
-  security_group_id = module.security_groups.ecs_sg_id
+  subnet_ids         = values(module.vpc.private_subnet_ids)
+  control_plane_subnet_ids = values(module.vpc.public_subnet_ids)
+  
+  # 노드 그룹 설정
+  node_group_instance_types = var.eks_node_instance_types
+  node_group_capacity_type  = var.eks_node_capacity_type
+  node_group_min_size       = var.eks_node_min_size
+  node_group_max_size       = var.eks_node_max_size
+  node_group_desired_size   = var.eks_node_desired_size
 
-  # IAM 역할
-  ecs_task_execution_role_arn = module.iam.ecs_task_execution_role_arn
-  ecs_task_role_arn           = module.iam.ecs_task_role_arn
+  # Kubernetes 버전
+  cluster_version = var.eks_cluster_version
 
-  # ALB 연결
-  alb_target_group_arn = module.alb.target_group_arn
-  alb_listener_arn     = module.alb.listener_arn
-
-  # ECR 설정 (Global ECR 리포지토리 사용)
-  ecr_repository_url = try(data.terraform_remote_state.global_ecr.outputs.repository_url, var.ecr_repository_url)
-  ecr_repositories   = var.ecr_repositories
-  image_tag          = var.image_tag
-
-  # 서비스 디스커버리
-  service_discovery_service_arns = module.cloudmap.service_arns
-
-  # 외부 서비스 연결
-  elasticache_primary_endpoint = module.elasticache.primary_endpoint
-  elasticache_reader_endpoint  = module.elasticache.reader_endpoint
-  database_endpoint            = module.aurora.cluster_endpoint
-  database_port                = module.aurora.port
-  database_name                = module.aurora.database_name
-  database_secret_arn          = module.aurora.master_password_secret_arn
-  kafka_bootstrap_servers      = module.ec2_kafka.bootstrap_servers
-
-  # 로그 설정
-  log_retention_days = var.ecs_log_retention_days
+  # Add-ons 설정
+  enable_aws_load_balancer_controller = true
+  enable_karpenter                    = true
+  enable_ebs_csi_driver              = true
 
   tags = var.tags
+}
 
-  depends_on = [
-    module.iam,
-    module.aurora,
-    module.cloudmap,
-    module.ec2_kafka
-  ]
+# RDS PostgreSQL 모듈 (Prod 환경용) - Multi-AZ 활성화
+module "rds" {
+  source = "../../modules/rds"
+
+  name              = var.rds_name
+  environment       = "prod"
+  subnet_ids        = values(module.vpc.data_subnet_ids)
+  security_group_id = module.security_groups.db_sg_id
+
+  # PostgreSQL 설정
+  engine_version = var.rds_engine_version
+
+  # Prod 환경 설정
+  instance_class          = var.rds_instance_class
+  allocated_storage       = var.rds_allocated_storage
+  backup_retention_period = var.rds_backup_retention_period
+  multi_az                = true # Multi-AZ 활성화
+  deletion_protection     = true
+  skip_final_snapshot     = false
+
+  tags = var.tags
 }

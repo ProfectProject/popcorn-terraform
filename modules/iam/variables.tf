@@ -22,6 +22,12 @@ variable "account_id" {
   default     = null
 }
 
+variable "enable_eks_roles" {
+  description = "Enable EKS-related IAM roles"
+  type        = bool
+  default     = false
+}
+
 variable "tags" {
   description = "A map of tags to assign to the resources"
   type        = map(string)

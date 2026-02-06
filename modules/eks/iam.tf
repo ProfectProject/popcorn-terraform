@@ -2,7 +2,7 @@
 
 # EKS Cluster Service Role
 resource "aws_iam_role" "cluster" {
-  name = "${var.cluster_name}-cluster-role"
+  name = "${var.name}-cluster-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -18,7 +18,7 @@ resource "aws_iam_role" "cluster" {
   })
 
   tags = merge(var.tags, {
-    Name = "${var.cluster_name}-cluster-role"
+    Name = "${var.name}-cluster-role"
   })
 }
 
@@ -27,14 +27,9 @@ resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSClusterPolicy" {
   role       = aws_iam_role.cluster.name
 }
 
-resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSVPCResourceController" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
-  role       = aws_iam_role.cluster.name
-}
-
 # EKS Node Group Role
 resource "aws_iam_role" "node_group" {
-  name = "${var.cluster_name}-node-group-role"
+  name = "${var.name}-node-group-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -50,7 +45,7 @@ resource "aws_iam_role" "node_group" {
   })
 
   tags = merge(var.tags, {
-    Name = "${var.cluster_name}-node-group-role"
+    Name = "${var.name}-node-group-role"
   })
 }
 
@@ -75,33 +70,6 @@ resource "aws_iam_role_policy_attachment" "node_group_CloudWatchAgentServerPolic
   role       = aws_iam_role.node_group.name
 }
 
-# EKS Fargate Pod Execution Role
-resource "aws_iam_role" "fargate_pod" {
-  name = "${var.cluster_name}-fargate-pod-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "eks-fargate-pods.amazonaws.com"
-        }
-      }
-    ]
-  })
-
-  tags = merge(var.tags, {
-    Name = "${var.cluster_name}-fargate-pod-role"
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "fargate_pod_AmazonEKSFargatePodExecutionRolePolicy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
-  role       = aws_iam_role.fargate_pod.name
-}
-
 # OIDC Identity Provider for EKS
 data "tls_certificate" "cluster" {
   url = aws_eks_cluster.main.identity[0].oidc[0].issuer
@@ -113,14 +81,14 @@ resource "aws_iam_openid_connect_provider" "cluster" {
   url             = aws_eks_cluster.main.identity[0].oidc[0].issuer
 
   tags = merge(var.tags, {
-    Name = "${var.cluster_name}-oidc-provider"
+    Name = "${var.name}-oidc-provider"
   })
 }
 
 # AWS Load Balancer Controller IAM Role
 resource "aws_iam_role" "aws_load_balancer_controller" {
   count = var.enable_aws_load_balancer_controller ? 1 : 0
-  name  = "${var.cluster_name}-aws-load-balancer-controller"
+  name  = "${var.name}-aws-load-balancer-controller"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -142,188 +110,20 @@ resource "aws_iam_role" "aws_load_balancer_controller" {
   })
 
   tags = merge(var.tags, {
-    Name = "${var.cluster_name}-aws-load-balancer-controller"
+    Name = "${var.name}-aws-load-balancer-controller"
   })
 }
 
-resource "aws_iam_role_policy" "aws_load_balancer_controller" {
-  count = var.enable_aws_load_balancer_controller ? 1 : 0
-  name  = "${var.cluster_name}-aws-load-balancer-controller"
-  role  = aws_iam_role.aws_load_balancer_controller[0].id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "iam:CreateServiceLinkedRole",
-          "ec2:DescribeAccountAttributes",
-          "ec2:DescribeAddresses",
-          "ec2:DescribeAvailabilityZones",
-          "ec2:DescribeInternetGateways",
-          "ec2:DescribeVpcs",
-          "ec2:DescribeSubnets",
-          "ec2:DescribeSecurityGroups",
-          "ec2:DescribeInstances",
-          "ec2:DescribeNetworkInterfaces",
-          "ec2:DescribeTags",
-          "ec2:GetCoipPoolUsage",
-          "ec2:DescribeCoipPools",
-          "elasticloadbalancing:DescribeLoadBalancers",
-          "elasticloadbalancing:DescribeLoadBalancerAttributes",
-          "elasticloadbalancing:DescribeListeners",
-          "elasticloadbalancing:DescribeListenerCertificates",
-          "elasticloadbalancing:DescribeSSLPolicies",
-          "elasticloadbalancing:DescribeRules",
-          "elasticloadbalancing:DescribeTargetGroups",
-          "elasticloadbalancing:DescribeTargetGroupAttributes",
-          "elasticloadbalancing:DescribeTargetHealth",
-          "elasticloadbalancing:DescribeTags"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "cognito-idp:DescribeUserPoolClient",
-          "acm:ListCertificates",
-          "acm:DescribeCertificate",
-          "iam:ListServerCertificates",
-          "iam:GetServerCertificate",
-          "waf-regional:GetWebACL",
-          "waf-regional:GetWebACLForResource",
-          "waf-regional:AssociateWebACL",
-          "waf-regional:DisassociateWebACL",
-          "wafv2:GetWebACL",
-          "wafv2:GetWebACLForResource",
-          "wafv2:AssociateWebACL",
-          "wafv2:DisassociateWebACL",
-          "shield:DescribeProtection",
-          "shield:GetSubscriptionState",
-          "shield:DescribeSubscription",
-          "shield:CreateProtection",
-          "shield:DeleteProtection"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "ec2:AuthorizeSecurityGroupIngress",
-          "ec2:RevokeSecurityGroupIngress"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "ec2:CreateSecurityGroup"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "ec2:CreateTags"
-        ]
-        Resource = "arn:aws:ec2:*:*:security-group/*"
-        Condition = {
-          StringEquals = {
-            "ec2:CreateAction" = "CreateSecurityGroup"
-          }
-          Null = {
-            "aws:RequestedRegion" = "false"
-          }
-        }
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "elasticloadbalancing:CreateLoadBalancer",
-          "elasticloadbalancing:CreateTargetGroup"
-        ]
-        Resource = "*"
-        Condition = {
-          Null = {
-            "aws:RequestedRegion" = "false"
-          }
-        }
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "elasticloadbalancing:CreateListener",
-          "elasticloadbalancing:DeleteListener",
-          "elasticloadbalancing:CreateRule",
-          "elasticloadbalancing:DeleteRule"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "elasticloadbalancing:AddTags",
-          "elasticloadbalancing:RemoveTags"
-        ]
-        Resource = [
-          "arn:aws:elasticloadbalancing:*:*:targetgroup/*/*",
-          "arn:aws:elasticloadbalancing:*:*:loadbalancer/net/*/*",
-          "arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*"
-        ]
-        Condition = {
-          Null = {
-            "aws:RequestedRegion" = "false"
-            "aws:ResourceTag/elbv2.k8s.aws/cluster" = "false"
-          }
-        }
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "elasticloadbalancing:ModifyLoadBalancerAttributes",
-          "elasticloadbalancing:SetIpAddressType",
-          "elasticloadbalancing:SetSecurityGroups",
-          "elasticloadbalancing:SetSubnets",
-          "elasticloadbalancing:DeleteLoadBalancer",
-          "elasticloadbalancing:ModifyTargetGroup",
-          "elasticloadbalancing:ModifyTargetGroupAttributes",
-          "elasticloadbalancing:DeleteTargetGroup"
-        ]
-        Resource = "*"
-        Condition = {
-          Null = {
-            "aws:ResourceTag/elbv2.k8s.aws/cluster" = "false"
-          }
-        }
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "elasticloadbalancing:RegisterTargets",
-          "elasticloadbalancing:DeregisterTargets"
-        ]
-        Resource = "arn:aws:elasticloadbalancing:*:*:targetgroup/*/*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "elasticloadbalancing:SetWebAcl",
-          "elasticloadbalancing:ModifyListener",
-          "elasticloadbalancing:AddListenerCertificates",
-          "elasticloadbalancing:RemoveListenerCertificates",
-          "elasticloadbalancing:ModifyRule"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
+resource "aws_iam_role_policy_attachment" "aws_load_balancer_controller" {
+  count      = var.enable_aws_load_balancer_controller ? 1 : 0
+  policy_arn = "arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess"
+  role       = aws_iam_role.aws_load_balancer_controller[0].name
 }
 
 # EBS CSI Driver IAM Role
 resource "aws_iam_role" "ebs_csi_driver" {
   count = var.enable_ebs_csi_driver ? 1 : 0
-  name  = "${var.cluster_name}-ebs-csi-driver"
+  name  = "${var.name}-ebs-csi-driver"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -345,7 +145,7 @@ resource "aws_iam_role" "ebs_csi_driver" {
   })
 
   tags = merge(var.tags, {
-    Name = "${var.cluster_name}-ebs-csi-driver"
+    Name = "${var.name}-ebs-csi-driver"
   })
 }
 
@@ -355,10 +155,10 @@ resource "aws_iam_role_policy_attachment" "ebs_csi_driver" {
   role       = aws_iam_role.ebs_csi_driver[0].name
 }
 
-# Cluster Autoscaler IAM Role
-resource "aws_iam_role" "cluster_autoscaler" {
-  count = var.enable_cluster_autoscaler ? 1 : 0
-  name  = "${var.cluster_name}-cluster-autoscaler"
+# Karpenter IAM Role
+resource "aws_iam_role" "karpenter" {
+  count = var.enable_karpenter ? 1 : 0
+  name  = "${var.name}-karpenter"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -371,7 +171,7 @@ resource "aws_iam_role" "cluster_autoscaler" {
         }
         Condition = {
           StringEquals = {
-            "${replace(aws_iam_openid_connect_provider.cluster.url, "https://", "")}:sub" = "system:serviceaccount:kube-system:cluster-autoscaler"
+            "${replace(aws_iam_openid_connect_provider.cluster.url, "https://", "")}:sub" = "system:serviceaccount:karpenter:karpenter"
             "${replace(aws_iam_openid_connect_provider.cluster.url, "https://", "")}:aud" = "sts.amazonaws.com"
           }
         }
@@ -380,14 +180,14 @@ resource "aws_iam_role" "cluster_autoscaler" {
   })
 
   tags = merge(var.tags, {
-    Name = "${var.cluster_name}-cluster-autoscaler"
+    Name = "${var.name}-karpenter"
   })
 }
 
-resource "aws_iam_role_policy" "cluster_autoscaler" {
-  count = var.enable_cluster_autoscaler ? 1 : 0
-  name  = "${var.cluster_name}-cluster-autoscaler"
-  role  = aws_iam_role.cluster_autoscaler[0].id
+resource "aws_iam_role_policy" "karpenter" {
+  count = var.enable_karpenter ? 1 : 0
+  name  = "${var.name}-karpenter"
+  role  = aws_iam_role.karpenter[0].id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -395,26 +195,43 @@ resource "aws_iam_role_policy" "cluster_autoscaler" {
       {
         Effect = "Allow"
         Action = [
-          "autoscaling:DescribeAutoScalingGroups",
-          "autoscaling:DescribeAutoScalingInstances",
-          "autoscaling:DescribeLaunchConfigurations",
-          "autoscaling:DescribeScalingActivities",
-          "autoscaling:DescribeTags",
+          "ssm:GetParameter",
           "ec2:DescribeImages",
+          "ec2:RunInstances",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeSecurityGroups",
+          "ec2:DescribeLaunchTemplates",
+          "ec2:DescribeInstances",
           "ec2:DescribeInstanceTypes",
-          "ec2:DescribeLaunchTemplateVersions",
-          "ec2:GetInstanceTypesFromInstanceRequirements",
-          "eks:DescribeNodegroup"
+          "ec2:DescribeInstanceTypeOfferings",
+          "ec2:DescribeAvailabilityZones",
+          "ec2:DeleteLaunchTemplate",
+          "ec2:CreateTags",
+          "ec2:CreateLaunchTemplate",
+          "ec2:CreateFleet",
+          "ec2:DescribeSpotPriceHistory",
+          "pricing:GetProducts"
         ]
         Resource = "*"
       },
       {
         Effect = "Allow"
         Action = [
-          "autoscaling:SetDesiredCapacity",
-          "autoscaling:TerminateInstanceInAutoScalingGroup"
+          "ec2:TerminateInstances"
         ]
         Resource = "*"
+        Condition = {
+          StringLike = {
+            "ec2:ResourceTag/karpenter.sh/cluster" = var.name
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "iam:PassRole"
+        ]
+        Resource = "arn:aws:iam::*:role/KarpenterNodeInstanceProfile-${var.name}"
       }
     ]
   })

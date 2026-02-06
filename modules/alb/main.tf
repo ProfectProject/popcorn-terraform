@@ -19,15 +19,16 @@ resource "aws_lb" "this" {
   tags = var.tags
 }
 
-resource "aws_lb_target_group" "gateway" {
-  name        = var.target_group_name
-  port        = var.target_group_port
+# Default Target Group (EKS Ingress Controller가 관리)
+resource "aws_lb_target_group" "default" {
+  name        = "${var.name}-default"
+  port        = 80
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
 
   health_check {
-    path                = var.health_check_path
+    path                = "/"
     healthy_threshold   = 2
     unhealthy_threshold = 3
     timeout             = 5
@@ -36,29 +37,6 @@ resource "aws_lb_target_group" "gateway" {
   }
 
   tags = var.tags
-}
-
-# Payment Front Target Group
-resource "aws_lb_target_group" "payment_front" {
-  name        = "${substr(var.name, 0, 20)}-pay-front"
-  port        = 3000
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    path                = "/health"
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-    timeout             = 5
-    interval            = 30
-    matcher             = "200-399"
-    port                = "3000"
-  }
-
-  tags = merge(var.tags, {
-    Name = "${var.name}-payment-front-tg"
-  })
 }
 
 resource "aws_lb_listener" "http" {
@@ -86,27 +64,6 @@ resource "aws_lb_listener" "https" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.gateway.arn
+    target_group_arn = aws_lb_target_group.default.arn
   }
-}
-
-# Payment Front Listener Rule
-resource "aws_lb_listener_rule" "payment_front" {
-  listener_arn = aws_lb_listener.https.arn
-  priority     = 100
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.payment_front.arn
-  }
-
-  condition {
-    path_pattern {
-      values = ["/payment/*", "/pay/*"]
-    }
-  }
-
-  tags = merge(var.tags, {
-    Name = "${var.name}-payment-front-rule"
-  })
 }

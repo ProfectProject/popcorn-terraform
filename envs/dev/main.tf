@@ -63,10 +63,58 @@ module "alb" {
   tags = var.tags
 }
 
-# Route53 레코드 - 외부 트래픽 수신
-resource "aws_route53_record" "dev" {
+# Route53 레코드 - 메인 도메인 및 서브도메인
+resource "aws_route53_record" "main" {
   zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
-  name    = "dev.goormpopcorn.shop"
+  name    = "goormpopcorn.shop"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "api" {
+  zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
+  name    = "api.goormpopcorn.shop"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "kafka" {
+  zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
+  name    = "kafka.goormpopcorn.shop"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "argocd" {
+  zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
+  name    = "argocd.goormpopcorn.shop"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "grafana" {
+  zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
+  name    = "grafana.goormpopcorn.shop"
   type    = "A"
 
   alias {
@@ -109,6 +157,9 @@ module "iam" {
   environment = "dev"
   region      = var.region
 
+  # EKS 관련 IAM 역할 추가
+  enable_eks_roles = true
+
   tags = var.tags
 }
 
@@ -135,97 +186,73 @@ module "rds" {
   tags = var.tags
 }
 
-# CloudMap 서비스 디스커버리 모듈
-module "cloudmap" {
-  source = "../../modules/cloudmap"
+# EKS 클러스터 모듈
+module "eks" {
+  source = "../../modules/eks"
 
-  name           = var.cloudmap_name
-  vpc_id         = module.vpc.vpc_id
-  namespace_name = var.cloudmap_namespace
-  dns_ttl        = var.cloudmap_dns_ttl
-
-  tags = var.tags
-}
-
-# EC2 Kafka 모듈
-module "ec2_kafka" {
-  source = "../../modules/ec2-kafka"
-
-  name              = var.ec2_kafka_name
-  environment       = "dev"
-  node_count        = var.ec2_kafka_node_count
-  instance_type     = var.ec2_kafka_instance_type
-  key_name          = var.ec2_kafka_key_name
-  subnet_ids        = values(module.vpc.private_subnet_ids)
-  security_group_id = module.security_groups.kafka_sg_id
-
-  # IAM instance profile
-  iam_instance_profile = module.iam.ec2_ssm_instance_profile_name
-
-  # Dev 환경 설정
-  root_volume_size = 8
-  data_volume_size = 20
-
-  tags = var.tags
-}
-
-# ECS Fargate 모듈
-module "ecs" {
-  source = "../../modules/ecs"
-
-  name        = var.ecs_name
+  name        = var.eks_name
   environment = "dev"
   region      = var.region
   vpc_id      = module.vpc.vpc_id
 
   # 네트워크 설정
-  subnet_ids        = values(module.vpc.private_subnet_ids)
-  security_group_id = module.security_groups.ecs_sg_id
+  subnet_ids         = values(module.vpc.private_subnet_ids)
+  control_plane_subnet_ids = values(module.vpc.public_subnet_ids)
+  
+  # 노드 그룹 설정
+  node_group_instance_types = var.eks_node_instance_types
+  node_group_capacity_type  = var.eks_node_capacity_type
+  node_group_min_size       = var.eks_node_min_size
+  node_group_max_size       = var.eks_node_max_size
+  node_group_desired_size   = var.eks_node_desired_size
 
-  # IAM 역할
-  ecs_task_execution_role_arn = module.iam.ecs_task_execution_role_arn
-  ecs_task_role_arn           = module.iam.ecs_task_role_arn
+  # Kubernetes 버전
+  cluster_version = var.eks_cluster_version
 
-  # ALB 연결 - Route53 트래픽 수신용
-  alb_target_group_arn           = module.alb.target_group_arn
-  payment_front_target_group_arn = module.alb.payment_front_target_group_arn
-  alb_listener_arn               = module.alb.listener_arn
-
-  # ECR 설정 (Global ECR 리포지토리 사용)
-  ecr_repository_url = try(data.terraform_remote_state.global_ecr.outputs.repository_url, var.ecr_repository_url)
-  ecr_repositories   = var.ecr_repositories
-  image_tag          = var.image_tag
-
-  # 서비스 디스커버리
-  service_discovery_service_arns = module.cloudmap.service_arns
-
-  # 외부 서비스 연결
-  elasticache_primary_endpoint = module.elasticache.primary_endpoint
-  elasticache_reader_endpoint  = module.elasticache.reader_endpoint
-  database_endpoint            = module.rds.endpoint
-  database_port                = module.rds.port
-  database_name                = module.rds.database_name
-  database_secret_arn          = module.rds.master_password_secret_arn
-  kafka_bootstrap_servers      = module.ec2_kafka.bootstrap_servers
-
-  # 로그 설정
-  log_retention_days = var.ecs_log_retention_days
+  # Add-ons 설정
+  enable_aws_load_balancer_controller = true
+  enable_karpenter                    = true
+  enable_ebs_csi_driver              = true
 
   tags = var.tags
+}
 
-  depends_on = [
-    module.iam,
-    module.rds,
-    module.cloudmap,
-    module.ec2_kafka
-  ]
+# EKS 클러스터 모듈
+module "eks" {
+  source = "../../modules/eks"
+
+  name        = var.eks_name
+  environment = "dev"
+  region      = var.region
+  vpc_id      = module.vpc.vpc_id
+
+  # 네트워크 설정
+  subnet_ids         = values(module.vpc.private_subnet_ids)
+  control_plane_subnet_ids = values(module.vpc.public_subnet_ids)
+  
+  # 노드 그룹 설정
+  node_group_instance_types = var.eks_node_instance_types
+  node_group_capacity_type  = var.eks_node_capacity_type
+  node_group_min_size       = var.eks_node_min_size
+  node_group_max_size       = var.eks_node_max_size
+  node_group_desired_size   = var.eks_node_desired_size
+
+  # Kubernetes 버전
+  cluster_version = var.eks_cluster_version
+
+  # Add-ons 설정
+  enable_aws_load_balancer_controller = true
+  enable_karpenter                    = true
+  enable_ebs_csi_driver              = true
+
+  tags = var.tags
 }
 
 # 통합 모니터링 모듈 (SNS 없이)
 module "monitoring" {
   source = "../../modules/monitoring"
 
-  name   = var.ecs_name
+  name   = var.eks_name
   region = var.region
 
   # 기존 리소스 연결

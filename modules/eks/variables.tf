@@ -1,6 +1,6 @@
 # EKS Module Variables
 
-variable "cluster_name" {
+variable "name" {
   description = "Name of the EKS cluster"
   type        = string
 }
@@ -10,7 +10,12 @@ variable "environment" {
   type        = string
 }
 
-variable "kubernetes_version" {
+variable "region" {
+  description = "AWS region"
+  type        = string
+}
+
+variable "cluster_version" {
   description = "Kubernetes version for the EKS cluster"
   type        = string
   default     = "1.35"
@@ -22,13 +27,79 @@ variable "vpc_id" {
 }
 
 variable "subnet_ids" {
-  description = "List of subnet IDs for the EKS cluster"
+  description = "List of private subnet IDs for EKS node groups"
   type        = list(string)
 }
 
-variable "private_subnet_ids" {
-  description = "List of private subnet IDs for EKS node groups"
+variable "control_plane_subnet_ids" {
+  description = "List of subnet IDs for the EKS control plane"
   type        = list(string)
+}
+
+variable "node_group_instance_types" {
+  description = "List of instance types for the node group"
+  type        = list(string)
+  default     = ["t3.medium"]
+}
+
+variable "node_group_capacity_type" {
+  description = "Type of capacity associated with the EKS Node Group. Valid values: ON_DEMAND, SPOT"
+  type        = string
+  default     = "ON_DEMAND"
+}
+
+variable "node_group_min_size" {
+  description = "Minimum number of nodes in the node group"
+  type        = number
+  default     = 1
+}
+
+variable "node_group_max_size" {
+  description = "Maximum number of nodes in the node group"
+  type        = number
+  default     = 5
+}
+
+variable "node_group_desired_size" {
+  description = "Desired number of nodes in the node group"
+  type        = number
+  default     = 2
+}
+
+variable "enable_aws_load_balancer_controller" {
+  description = "Enable AWS Load Balancer Controller"
+  type        = bool
+  default     = true
+}
+
+variable "enable_karpenter" {
+  description = "Enable Karpenter for node auto-scaling"
+  type        = bool
+  default     = true
+}
+
+variable "enable_ebs_csi_driver" {
+  description = "Enable EBS CSI driver"
+  type        = bool
+  default     = true
+}
+
+variable "enable_cluster_autoscaler" {
+  description = "Enable Cluster Autoscaler"
+  type        = bool
+  default     = false
+}
+
+variable "enable_metrics_server" {
+  description = "Enable Metrics Server"
+  type        = bool
+  default     = true
+}
+
+variable "enable_container_insights" {
+  description = "Enable CloudWatch Container Insights"
+  type        = bool
+  default     = true
 }
 
 variable "endpoint_private_access" {
@@ -49,12 +120,6 @@ variable "public_access_cidrs" {
   default     = ["0.0.0.0/0"]
 }
 
-variable "allowed_cidr_blocks" {
-  description = "List of CIDR blocks allowed to access the cluster"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
-}
-
 variable "cluster_log_types" {
   description = "List of control plane logging to enable"
   type        = list(string)
@@ -67,80 +132,8 @@ variable "cloudwatch_log_retention" {
   default     = 7
 }
 
-variable "kms_key_deletion_window" {
-  description = "KMS key deletion window in days"
-  type        = number
-  default     = 7
-}
-
-variable "node_groups" {
-  description = "Map of EKS node group configurations"
-  type = map(object({
-    capacity_type                = string
-    instance_types              = list(string)
-    ami_type                    = string
-    disk_size                   = number
-    desired_size                = number
-    max_size                    = number
-    min_size                    = number
-    max_unavailable_percentage  = number
-    labels                      = map(string)
-    taints = list(object({
-      key    = string
-      value  = string
-      effect = string
-    }))
-  }))
-  default = {}
-}
-
-variable "fargate_profiles" {
-  description = "Map of EKS Fargate profile configurations"
-  type = map(object({
-    selectors = list(object({
-      namespace = string
-      labels    = map(string)
-    }))
-  }))
-  default = {}
-}
-
-variable "cluster_addons" {
-  description = "Map of cluster addon configurations"
-  type = map(object({
-    version                  = string
-    resolve_conflicts        = string
-    service_account_role_arn = string
-  }))
-  default = {}
-}
-
-variable "enable_aws_load_balancer_controller" {
-  description = "Enable AWS Load Balancer Controller"
-  type        = bool
-  default     = true
-}
-
-variable "enable_ebs_csi_driver" {
-  description = "Enable EBS CSI driver"
-  type        = bool
-  default     = true
-}
-
-variable "enable_cluster_autoscaler" {
-  description = "Enable Cluster Autoscaler"
-  type        = bool
-  default     = true
-}
-
-variable "enable_metrics_server" {
-  description = "Enable Metrics Server"
-  type        = bool
-  default     = true
-}
-
-variable "enable_container_insights" {
-  description = "Enable CloudWatch Container Insights"
+variable "enable_loki_integration" {
+  description = "Enable CloudWatch Logs to Loki integration via Kinesis"
   type        = bool
   default     = true
 }

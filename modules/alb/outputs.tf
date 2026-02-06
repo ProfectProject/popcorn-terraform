@@ -15,13 +15,8 @@ output "alb_zone_id" {
   value = aws_lb.this.zone_id
 }
 
-output "target_group_arn" {
-  value = aws_lb_target_group.gateway.arn
-}
-
-output "payment_front_target_group_arn" {
-  description = "Payment front target group ARN"
-  value       = aws_lb_target_group.payment_front.arn
+output "default_target_group_arn" {
+  value = aws_lb_target_group.default.arn
 }
 
 output "listener_arn" {

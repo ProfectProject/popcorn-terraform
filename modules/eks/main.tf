@@ -1,5 +1,5 @@
 # EKS Cluster Module
-# 6-12개월 후 ECS에서 EKS로 전환을 위한 모듈
+# Kubernetes 1.35 기반 EKS 클러스터
 
 terraform {
   required_providers {
@@ -20,12 +20,12 @@ terraform {
 
 # EKS Cluster
 resource "aws_eks_cluster" "main" {
-  name     = var.cluster_name
+  name     = var.name
   role_arn = aws_iam_role.cluster.arn
-  version  = var.kubernetes_version
+  version  = var.cluster_version
 
   vpc_config {
-    subnet_ids              = var.subnet_ids
+    subnet_ids              = var.control_plane_subnet_ids
     endpoint_private_access = var.endpoint_private_access
     endpoint_public_access  = var.endpoint_public_access
     public_access_cidrs     = var.public_access_cidrs
@@ -43,53 +43,40 @@ resource "aws_eks_cluster" "main" {
 
   depends_on = [
     aws_iam_role_policy_attachment.cluster_AmazonEKSClusterPolicy,
-    aws_iam_role_policy_attachment.cluster_AmazonEKSVPCResourceController,
     aws_cloudwatch_log_group.cluster,
   ]
 
   tags = merge(var.tags, {
-    Name = var.cluster_name
+    Name = var.name
   })
 }
 
 # EKS Node Group
 resource "aws_eks_node_group" "main" {
-  for_each = var.node_groups
-
   cluster_name    = aws_eks_cluster.main.name
-  node_group_name = each.key
+  node_group_name = "${var.name}-nodes"
   node_role_arn   = aws_iam_role.node_group.arn
-  subnet_ids      = var.private_subnet_ids
+  subnet_ids      = var.subnet_ids
 
-  capacity_type  = each.value.capacity_type
-  instance_types = each.value.instance_types
-  ami_type       = each.value.ami_type
-  disk_size      = each.value.disk_size
+  capacity_type  = var.node_group_capacity_type
+  instance_types = var.node_group_instance_types
+  ami_type       = "AL2_x86_64"
+  disk_size      = 20
 
   scaling_config {
-    desired_size = each.value.desired_size
-    max_size     = each.value.max_size
-    min_size     = each.value.min_size
+    desired_size = var.node_group_desired_size
+    max_size     = var.node_group_max_size
+    min_size     = var.node_group_min_size
   }
 
   update_config {
-    max_unavailable_percentage = each.value.max_unavailable_percentage
+    max_unavailable_percentage = 25
   }
 
   # Kubernetes labels
-  labels = merge(each.value.labels, {
-    "node-group" = each.key
+  labels = {
+    "node-group"  = "${var.name}-nodes"
     "environment" = var.environment
-  })
-
-  # Kubernetes taints
-  dynamic "taint" {
-    for_each = each.value.taints
-    content {
-      key    = taint.value.key
-      value  = taint.value.value
-      effect = taint.value.effect
-    }
   }
 
   depends_on = [
@@ -99,89 +86,144 @@ resource "aws_eks_node_group" "main" {
   ]
 
   tags = merge(var.tags, {
-    Name = "${var.cluster_name}-${each.key}"
-  })
-}
-
-# EKS Fargate Profile (선택적)
-resource "aws_eks_fargate_profile" "main" {
-  for_each = var.fargate_profiles
-
-  cluster_name           = aws_eks_cluster.main.name
-  fargate_profile_name   = each.key
-  pod_execution_role_arn = aws_iam_role.fargate_pod.arn
-  subnet_ids             = var.private_subnet_ids
-
-  dynamic "selector" {
-    for_each = each.value.selectors
-    content {
-      namespace = selector.value.namespace
-      labels    = selector.value.labels
-    }
-  }
-
-  depends_on = [
-    aws_iam_role_policy_attachment.fargate_pod_AmazonEKSFargatePodExecutionRolePolicy,
-  ]
-
-  tags = merge(var.tags, {
-    Name = "${var.cluster_name}-${each.key}"
+    Name = "${var.name}-nodes"
   })
 }
 
 # EKS Add-ons
-resource "aws_eks_addon" "main" {
-  for_each = var.cluster_addons
+resource "aws_eks_addon" "vpc_cni" {
+  cluster_name = aws_eks_cluster.main.name
+  addon_name   = "vpc-cni"
+  
+  depends_on = [aws_eks_node_group.main]
+  tags = var.tags
+}
 
+resource "aws_eks_addon" "coredns" {
+  cluster_name = aws_eks_cluster.main.name
+  addon_name   = "coredns"
+  
+  depends_on = [aws_eks_node_group.main]
+  tags = var.tags
+}
+
+resource "aws_eks_addon" "kube_proxy" {
+  cluster_name = aws_eks_cluster.main.name
+  addon_name   = "kube-proxy"
+  
+  depends_on = [aws_eks_node_group.main]
+  tags = var.tags
+}
+
+resource "aws_eks_addon" "ebs_csi_driver" {
+  count = var.enable_ebs_csi_driver ? 1 : 0
+  
   cluster_name             = aws_eks_cluster.main.name
-  addon_name               = each.key
-  addon_version            = each.value.version
-  resolve_conflicts        = each.value.resolve_conflicts
-  service_account_role_arn = each.value.service_account_role_arn
-
-  depends_on = [
-    aws_eks_node_group.main,
-    aws_eks_fargate_profile.main,
-  ]
-
+  addon_name               = "aws-ebs-csi-driver"
+  service_account_role_arn = aws_iam_role.ebs_csi_driver[0].arn
+  
+  depends_on = [aws_eks_node_group.main]
   tags = var.tags
 }
 
 # KMS Key for EKS encryption
 resource "aws_kms_key" "eks" {
-  description             = "EKS Secret Encryption Key for ${var.cluster_name}"
-  deletion_window_in_days = var.kms_key_deletion_window
+  description             = "EKS Secret Encryption Key for ${var.name}"
+  deletion_window_in_days = 7
   enable_key_rotation     = true
 
   tags = merge(var.tags, {
-    Name = "${var.cluster_name}-eks-encryption-key"
+    Name = "${var.name}-eks-encryption-key"
   })
 }
 
 resource "aws_kms_alias" "eks" {
-  name          = "alias/${var.cluster_name}-eks-encryption-key"
+  name          = "alias/${var.name}-eks-encryption-key"
   target_key_id = aws_kms_key.eks.key_id
 }
 
 # CloudWatch Log Group for EKS
 resource "aws_cloudwatch_log_group" "cluster" {
-  name              = "/aws/eks/${var.cluster_name}/cluster"
+  name              = "/aws/eks/${var.name}/cluster"
   retention_in_days = var.cloudwatch_log_retention
   kms_key_id        = aws_kms_key.eks.arn
 
   tags = merge(var.tags, {
-    Name = "${var.cluster_name}-cluster-logs"
+    Name = "${var.name}-cluster-logs"
   })
+}
+
+# CloudWatch Logs → Loki 통합을 위한 IAM 역할
+resource "aws_iam_role" "cloudwatch_logs_role" {
+  count = var.enable_loki_integration ? 1 : 0
+  name  = "${var.name}-cloudwatch-logs-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "logs.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy" "cloudwatch_logs_policy" {
+  count = var.enable_loki_integration ? 1 : 0
+  name  = "${var.name}-cloudwatch-logs-policy"
+  role  = aws_iam_role.cloudwatch_logs_role[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "kinesis:PutRecord",
+          "kinesis:PutRecords"
+        ]
+        Resource = aws_kinesis_stream.eks_logs[0].arn
+      }
+    ]
+  })
+}
+
+# Kinesis Stream for EKS logs
+resource "aws_kinesis_stream" "eks_logs" {
+  count           = var.enable_loki_integration ? 1 : 0
+  name            = "${var.name}-eks-logs-stream"
+  shard_count     = 1
+  retention_period = 24
+
+  tags = var.tags
+}
+
+# CloudWatch Logs Subscription Filter
+resource "aws_cloudwatch_log_subscription_filter" "eks_logs_to_kinesis" {
+  count           = var.enable_loki_integration ? 1 : 0
+  name            = "${var.name}-eks-logs-filter"
+  log_group_name  = aws_cloudwatch_log_group.cluster.name
+  filter_pattern  = ""
+  destination_arn = aws_kinesis_stream.eks_logs[0].arn
+  role_arn        = aws_iam_role.cloudwatch_logs_role[0].arn
+
+  depends_on = [aws_iam_role_policy.cloudwatch_logs_policy]
 }
 
 # Security Group for EKS Cluster
 resource "aws_security_group" "cluster" {
-  name_prefix = "${var.cluster_name}-cluster-"
+  name_prefix = "${var.name}-cluster-"
   vpc_id      = var.vpc_id
   description = "EKS cluster security group"
 
   tags = merge(var.tags, {
-    Name = "${var.cluster_name}-cluster-sg"
+    Name = "${var.name}-cluster-sg"
   })
 }
 
@@ -191,7 +233,7 @@ resource "aws_security_group_rule" "cluster_ingress_workstation_https" {
   from_port         = 443
   to_port           = 443
   protocol          = "tcp"
-  cidr_blocks       = var.allowed_cidr_blocks
+  cidr_blocks       = var.public_access_cidrs
   security_group_id = aws_security_group.cluster.id
 }
 
@@ -207,12 +249,12 @@ resource "aws_security_group_rule" "cluster_egress_all" {
 
 # Security Group for EKS Node Groups
 resource "aws_security_group" "node_group" {
-  name_prefix = "${var.cluster_name}-node-group-"
+  name_prefix = "${var.name}-node-group-"
   vpc_id      = var.vpc_id
   description = "EKS node group security group"
 
   tags = merge(var.tags, {
-    Name = "${var.cluster_name}-node-group-sg"
+    Name = "${var.name}-node-group-sg"
   })
 }
 

@@ -25,24 +25,9 @@ output "cluster_version" {
   value       = aws_eks_cluster.main.version
 }
 
-output "cluster_platform_version" {
-  description = "Platform version for the cluster"
-  value       = aws_eks_cluster.main.platform_version
-}
-
-output "cluster_status" {
-  description = "Status of the EKS cluster. One of `CREATING`, `ACTIVE`, `DELETING`, `FAILED`"
-  value       = aws_eks_cluster.main.status
-}
-
 output "cluster_security_group_id" {
   description = "Cluster security group that was created by Amazon EKS for the cluster"
   value       = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
-}
-
-output "cluster_iam_role_name" {
-  description = "IAM role name associated with EKS cluster"
-  value       = aws_iam_role.cluster.name
 }
 
 output "cluster_iam_role_arn" {
@@ -55,91 +40,24 @@ output "cluster_certificate_authority_data" {
   value       = aws_eks_cluster.main.certificate_authority[0].data
 }
 
-output "cluster_primary_security_group_id" {
-  description = "The cluster primary security group ID created by the EKS cluster"
-  value       = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
-}
-
-output "cluster_service_cidr" {
-  description = "The CIDR block that Kubernetes pod and service IP addresses are assigned from"
-  value       = aws_eks_cluster.main.kubernetes_network_config[0].service_ipv4_cidr
-}
-
-output "cluster_ip_family" {
-  description = "The IP family used to assign Kubernetes pod and service addresses"
-  value       = aws_eks_cluster.main.kubernetes_network_config[0].ip_family
-}
-
 output "oidc_provider_arn" {
   description = "The ARN of the OIDC Provider if enabled"
   value       = aws_iam_openid_connect_provider.cluster.arn
 }
 
-output "oidc_provider_url" {
-  description = "The URL of the OIDC Provider"
-  value       = aws_iam_openid_connect_provider.cluster.url
+output "node_group_arn" {
+  description = "Amazon Resource Name (ARN) of the EKS Node Group"
+  value       = aws_eks_node_group.main.arn
 }
 
-output "node_groups" {
-  description = "Map of attribute maps for all EKS node groups created"
-  value = {
-    for k, v in aws_eks_node_group.main : k => {
-      arn           = v.arn
-      status        = v.status
-      capacity_type = v.capacity_type
-      instance_types = v.instance_types
-      ami_type      = v.ami_type
-      node_role_arn = v.node_role_arn
-      scaling_config = v.scaling_config
-      remote_access = v.remote_access
-      labels        = v.labels
-      taints        = v.taint
-    }
-  }
-}
-
-output "fargate_profiles" {
-  description = "Map of attribute maps for all EKS Fargate profiles created"
-  value = {
-    for k, v in aws_eks_fargate_profile.main : k => {
-      arn                    = v.arn
-      status                 = v.status
-      pod_execution_role_arn = v.pod_execution_role_arn
-      selectors              = v.selector
-    }
-  }
-}
-
-output "cluster_addons" {
-  description = "Map of attribute maps for all EKS cluster addons enabled"
-  value = {
-    for k, v in aws_eks_addon.main : k => {
-      arn               = v.arn
-      status            = v.status
-      addon_version     = v.addon_version
-      resolve_conflicts = v.resolve_conflicts
-    }
-  }
-}
-
-output "node_group_iam_role_name" {
-  description = "IAM role name for EKS node groups"
-  value       = aws_iam_role.node_group.name
+output "node_group_status" {
+  description = "Status of the EKS Node Group"
+  value       = aws_eks_node_group.main.status
 }
 
 output "node_group_iam_role_arn" {
   description = "IAM role ARN for EKS node groups"
   value       = aws_iam_role.node_group.arn
-}
-
-output "fargate_pod_execution_role_name" {
-  description = "IAM role name for EKS Fargate pod execution"
-  value       = aws_iam_role.fargate_pod.name
-}
-
-output "fargate_pod_execution_role_arn" {
-  description = "IAM role ARN for EKS Fargate pod execution"
-  value       = aws_iam_role.fargate_pod.arn
 }
 
 output "aws_load_balancer_controller_role_arn" {
@@ -152,42 +70,27 @@ output "ebs_csi_driver_role_arn" {
   value       = var.enable_ebs_csi_driver ? aws_iam_role.ebs_csi_driver[0].arn : null
 }
 
-output "kms_key_arn" {
-  description = "The Amazon Resource Name (ARN) of the KMS key"
-  value       = aws_kms_key.eks.arn
-}
-
-output "kms_key_id" {
-  description = "The globally unique identifier for the KMS key"
-  value       = aws_kms_key.eks.key_id
-}
-
-output "cloudwatch_log_group_name" {
-  description = "Name of cloudwatch log group created"
-  value       = aws_cloudwatch_log_group.cluster.name
-}
-
-output "cloudwatch_log_group_arn" {
-  description = "Arn of cloudwatch log group created"
-  value       = aws_cloudwatch_log_group.cluster.arn
-}
-
-output "security_group_arn" {
-  description = "Amazon Resource Name (ARN) of the security group"
-  value       = aws_security_group.cluster.arn
+output "karpenter_role_arn" {
+  description = "IAM role ARN for Karpenter"
+  value       = var.enable_karpenter ? aws_iam_role.karpenter[0].arn : null
 }
 
 output "security_group_id" {
-  description = "ID of the security group"
+  description = "ID of the cluster security group"
   value       = aws_security_group.cluster.id
-}
-
-output "node_security_group_arn" {
-  description = "Amazon Resource Name (ARN) of the node shared security group"
-  value       = aws_security_group.node_group.arn
 }
 
 output "node_security_group_id" {
   description = "ID of the node shared security group"
   value       = aws_security_group.node_group.id
+}
+
+output "kinesis_stream_name" {
+  description = "Name of the Kinesis stream for EKS logs"
+  value       = var.enable_loki_integration ? aws_kinesis_stream.eks_logs[0].name : null
+}
+
+output "kinesis_stream_arn" {
+  description = "ARN of the Kinesis stream for EKS logs"
+  value       = var.enable_loki_integration ? aws_kinesis_stream.eks_logs[0].arn : null
 }
