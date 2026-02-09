@@ -3,8 +3,13 @@ name: terraform-apply
 on:
   push:
     branches:
-      - develop
-      - main
+      - develop  # Dev 환경
+      - main     # Prod 환경
+
+# 동시 실행 방지 - 환경별로 하나의 apply만 실행
+concurrency:
+  group: terraform-apply-${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+  cancel-in-progress: false
 
 permissions:
   contents: read

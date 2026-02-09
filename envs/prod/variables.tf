@@ -35,10 +35,6 @@ variable "data_subnets" {
   }))
 }
 
-variable "sg_name" {
-  type = string
-}
-
 variable "enable_nat" {
   type    = bool
   default = false
@@ -49,22 +45,49 @@ variable "single_nat_gateway" {
   default = false
 }
 
-variable "alb_name" {
+# Public ALB 설정 (Frontend 서비스용)
+variable "public_alb_name" {
   type = string
 }
 
-variable "alb_target_group_name" {
+variable "public_alb_target_group_name" {
   type = string
 }
 
-variable "alb_target_group_port" {
+variable "public_alb_target_group_port" {
   type    = number
   default = 8080
 }
 
-variable "alb_health_check_path" {
+variable "public_alb_health_check_path" {
   type    = string
   default = "/actuator/health"
+}
+
+# Management ALB 설정 (Kafka, ArgoCD, Grafana용)
+variable "management_alb_name" {
+  type = string
+}
+
+variable "management_alb_target_group_name" {
+  type = string
+}
+
+variable "management_alb_target_group_port" {
+  type    = number
+  default = 8080
+}
+
+variable "management_alb_health_check_path" {
+  type    = string
+  default = "/health"
+}
+
+# Management ALB 화이트리스트 IP
+variable "whitelist_ips" {
+  description = "Management ALB 접근 허용 IP 목록 (CIDR 형식)"
+  type        = list(string)
+  default     = []
 }
 
 variable "elasticache_name" {

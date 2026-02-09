@@ -183,3 +183,66 @@ output "maintenance_window" {
   description = "The maintenance window"
   value       = var.maintenance_window
 }
+
+
+# Security Group Outputs
+output "security_group_id" {
+  description = "The ID of the RDS security group"
+  value       = var.create_security_group ? aws_security_group.rds[0].id : null
+}
+
+output "security_group_arn" {
+  description = "The ARN of the RDS security group"
+  value       = var.create_security_group ? aws_security_group.rds[0].arn : null
+}
+
+# IAM Role Outputs
+output "monitoring_role_arn" {
+  description = "The ARN of the enhanced monitoring IAM role"
+  value       = var.create_monitoring_role && var.monitoring_interval > 0 ? aws_iam_role.rds_enhanced_monitoring[0].arn : null
+}
+
+output "monitoring_role_name" {
+  description = "The name of the enhanced monitoring IAM role"
+  value       = var.create_monitoring_role && var.monitoring_interval > 0 ? aws_iam_role.rds_enhanced_monitoring[0].name : null
+}
+
+# Secrets Manager Outputs
+output "secrets_manager_secret_id" {
+  description = "The ID of the Secrets Manager secret"
+  value       = var.create_secrets_manager ? aws_secretsmanager_secret.db_password[0].id : null
+}
+
+output "secrets_manager_secret_arn" {
+  description = "The ARN of the Secrets Manager secret"
+  value       = var.create_secrets_manager ? aws_secretsmanager_secret.db_password[0].arn : null
+}
+
+output "random_password" {
+  description = "The generated random password"
+  value       = var.create_random_password ? random_password.db_password[0].result : null
+  sensitive   = true
+}
+
+# SNS Topic Outputs
+output "sns_topic_arn" {
+  description = "The ARN of the SNS topic for RDS alerts"
+  value       = var.create_cloudwatch_alarms ? aws_sns_topic.rds_alerts[0].arn : null
+}
+
+output "sns_topic_name" {
+  description = "The name of the SNS topic for RDS alerts"
+  value       = var.create_cloudwatch_alarms ? aws_sns_topic.rds_alerts[0].name : null
+}
+
+# CloudWatch Alarms Outputs
+output "cloudwatch_alarm_ids" {
+  description = "Map of CloudWatch alarm IDs"
+  value = var.create_cloudwatch_alarms ? {
+    cpu_utilization    = aws_cloudwatch_metric_alarm.rds_cpu[0].id
+    connections        = aws_cloudwatch_metric_alarm.rds_connections[0].id
+    free_storage       = aws_cloudwatch_metric_alarm.rds_free_storage[0].id
+    read_latency       = aws_cloudwatch_metric_alarm.rds_read_latency[0].id
+    write_latency      = aws_cloudwatch_metric_alarm.rds_write_latency[0].id
+  } : {}
+}

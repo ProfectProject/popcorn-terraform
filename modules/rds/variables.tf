@@ -305,3 +305,110 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+
+# Security Group Configuration
+variable "create_security_group" {
+  description = "Whether to create a security group for RDS"
+  type        = bool
+  default     = true
+}
+
+variable "vpc_id" {
+  description = "VPC ID for security group"
+  type        = string
+  default     = null
+}
+
+variable "vpc_cidr_block" {
+  description = "VPC CIDR block for security group rules"
+  type        = string
+  default     = null
+}
+
+variable "allow_vpc_cidr" {
+  description = "Whether to allow access from VPC CIDR"
+  type        = bool
+  default     = true
+}
+
+variable "allowed_security_groups" {
+  description = "Map of security group IDs allowed to access RDS"
+  type        = map(string)
+  default     = {}
+}
+
+# IAM Configuration
+variable "create_monitoring_role" {
+  description = "Whether to create IAM role for enhanced monitoring"
+  type        = bool
+  default     = true
+}
+
+# Secrets Manager Configuration
+variable "create_random_password" {
+  description = "Whether to create a random password"
+  type        = bool
+  default     = false
+}
+
+variable "create_secrets_manager" {
+  description = "Whether to store password in Secrets Manager"
+  type        = bool
+  default     = false
+}
+
+variable "secrets_recovery_window" {
+  description = "Secrets Manager recovery window in days"
+  type        = number
+  default     = 7
+}
+
+# CloudWatch Alarms Configuration
+variable "create_cloudwatch_alarms" {
+  description = "Whether to create CloudWatch alarms"
+  type        = bool
+  default     = false
+}
+
+variable "alarm_evaluation_periods" {
+  description = "Number of periods to evaluate for alarms"
+  type        = number
+  default     = 2
+}
+
+variable "alarm_period" {
+  description = "Period in seconds for alarm evaluation"
+  type        = number
+  default     = 300
+}
+
+variable "alarm_cpu_threshold" {
+  description = "CPU utilization threshold for alarm"
+  type        = number
+  default     = 80
+}
+
+variable "alarm_connections_threshold" {
+  description = "Database connections threshold for alarm"
+  type        = number
+  default     = 80
+}
+
+variable "alarm_free_storage_threshold" {
+  description = "Free storage space threshold in bytes"
+  type        = number
+  default     = 2000000000 # 2GB
+}
+
+variable "alarm_read_latency_threshold" {
+  description = "Read latency threshold in seconds"
+  type        = number
+  default     = 0.2 # 200ms
+}
+
+variable "alarm_write_latency_threshold" {
+  description = "Write latency threshold in seconds"
+  type        = number
+  default     = 0.2 # 200ms
+}

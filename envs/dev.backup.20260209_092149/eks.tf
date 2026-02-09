@@ -1,9 +1,12 @@
 # EKS Configuration for Development Environment
 # 6-12개월 후 ECS에서 EKS로 전환을 위한 설정
+# 현재는 비활성화 상태 (enable_eks = false)
 
-# EKS 모듈 호출 (기본적으로 비활성화)
+# EKS 모듈 호출
+# 주의: EKS 모듈에 provider 설정이 있어 count를 사용할 수 없습니다
+# EKS를 활성화하려면 아래 주석을 해제하고 enable_eks 변수를 제거하세요
+/*
 module "eks" {
-  count  = var.enable_eks ? 1 : 0
   source = "../../modules/eks"
 
   cluster_name       = "${var.project_name}-${var.environment}-eks"
@@ -21,24 +24,24 @@ module "eks" {
   public_access_cidrs     = ["0.0.0.0/0"]
 
   # 로깅 설정
-  cluster_log_types         = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
-  cloudwatch_log_retention  = 7
-  kms_key_deletion_window   = 7
+  cluster_log_types        = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+  cloudwatch_log_retention = 7
+  kms_key_deletion_window  = 7
 
   # Node Groups 설정
   node_groups = {
     # 일반 워크로드용 노드 그룹
     general = {
       capacity_type              = "ON_DEMAND"
-      instance_types            = ["t3.medium"]
-      ami_type                  = "AL2_x86_64"
-      disk_size                 = 20
-      desired_size              = 2
-      max_size                  = 5
-      min_size                  = 1
+      instance_types             = ["t3.medium"]
+      ami_type                   = "AL2_x86_64"
+      disk_size                  = 20
+      desired_size               = 2
+      max_size                   = 5
+      min_size                   = 1
       max_unavailable_percentage = 25
       labels = {
-        role = "general"
+        role        = "general"
         environment = var.environment
       }
       taints = []
@@ -47,15 +50,15 @@ module "eks" {
     # 스팟 인스턴스 노드 그룹 (비용 절감)
     spot = {
       capacity_type              = "SPOT"
-      instance_types            = ["t3.medium", "t3.large"]
-      ami_type                  = "AL2_x86_64"
-      disk_size                 = 20
-      desired_size              = 1
-      max_size                  = 3
-      min_size                  = 0
+      instance_types             = ["t3.medium", "t3.large"]
+      ami_type                   = "AL2_x86_64"
+      disk_size                  = 20
+      desired_size               = 1
+      max_size                   = 3
+      min_size                   = 0
       max_unavailable_percentage = 50
       labels = {
-        role = "spot"
+        role        = "spot"
         environment = var.environment
       }
       taints = [
@@ -74,11 +77,11 @@ module "eks" {
       selectors = [
         {
           namespace = "kube-system"
-          labels = {}
+          labels    = {}
         },
         {
           namespace = "default"
-          labels = {}
+          labels    = {}
         }
       ]
     }
@@ -122,41 +125,37 @@ module "eks" {
     Purpose     = "eks-migration-preparation"
   }
 }
+*/
 
-# EKS 관련 변수 추가
-variable "enable_eks" {
-  description = "Enable EKS cluster (for future migration from ECS)"
-  type        = bool
-  default     = false
-}
-
-# EKS 출력 (조건부)
+# EKS 출력 (현재 비활성화)
+/*
 output "eks_cluster_id" {
   description = "EKS cluster ID"
-  value       = var.enable_eks ? module.eks[0].cluster_id : null
+  value       = module.eks.cluster_id
 }
 
 output "eks_cluster_endpoint" {
   description = "EKS cluster endpoint"
-  value       = var.enable_eks ? module.eks[0].cluster_endpoint : null
+  value       = module.eks.cluster_endpoint
 }
 
 output "eks_cluster_name" {
   description = "EKS cluster name"
-  value       = var.enable_eks ? module.eks[0].cluster_name : null
+  value       = module.eks.cluster_name
 }
 
 output "eks_cluster_version" {
   description = "EKS cluster Kubernetes version"
-  value       = var.enable_eks ? module.eks[0].cluster_version : null
+  value       = module.eks.cluster_version
 }
 
 output "eks_oidc_provider_arn" {
   description = "EKS OIDC provider ARN"
-  value       = var.enable_eks ? module.eks[0].oidc_provider_arn : null
+  value       = module.eks.oidc_provider_arn
 }
 
 output "eks_node_groups" {
   description = "EKS node groups"
-  value       = var.enable_eks ? module.eks[0].node_groups : {}
+  value       = module.eks.node_groups
 }
+*/

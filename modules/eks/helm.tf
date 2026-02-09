@@ -2,7 +2,7 @@
 
 # AWS Load Balancer Controller
 resource "helm_release" "aws_load_balancer_controller" {
-  count = var.enable_aws_load_balancer_controller ? 1 : 0
+  count = var.enable_helm && var.enable_aws_load_balancer_controller ? 1 : 0
 
   name       = "aws-load-balancer-controller"
   repository = "https://aws.github.io/eks-charts"
@@ -42,13 +42,12 @@ resource "helm_release" "aws_load_balancer_controller" {
 
   depends_on = [
     aws_eks_node_group.main,
-    aws_eks_fargate_profile.main,
   ]
 }
 
 # Cluster Autoscaler
 resource "helm_release" "cluster_autoscaler" {
-  count = var.enable_cluster_autoscaler ? 1 : 0
+  count = var.enable_helm && var.enable_cluster_autoscaler ? 1 : 0
 
   name       = "cluster-autoscaler"
   repository = "https://kubernetes.github.io/autoscaler"
@@ -98,13 +97,12 @@ resource "helm_release" "cluster_autoscaler" {
 
   depends_on = [
     aws_eks_node_group.main,
-    aws_eks_fargate_profile.main,
   ]
 }
 
 # Metrics Server
 resource "helm_release" "metrics_server" {
-  count = var.enable_metrics_server ? 1 : 0
+  count = var.enable_helm && var.enable_metrics_server ? 1 : 0
 
   name       = "metrics-server"
   repository = "https://kubernetes-sigs.github.io/metrics-server/"
@@ -134,13 +132,12 @@ resource "helm_release" "metrics_server" {
 
   depends_on = [
     aws_eks_node_group.main,
-    aws_eks_fargate_profile.main,
   ]
 }
 
 # CloudWatch Container Insights
 resource "kubernetes_namespace" "amazon_cloudwatch" {
-  count = var.enable_container_insights ? 1 : 0
+  count = var.enable_helm && var.enable_container_insights ? 1 : 0
 
   metadata {
     name = "amazon-cloudwatch"
@@ -153,7 +150,7 @@ resource "kubernetes_namespace" "amazon_cloudwatch" {
 }
 
 resource "kubernetes_config_map" "cwagentconfig" {
-  count = var.enable_container_insights ? 1 : 0
+  count = var.enable_helm && var.enable_container_insights ? 1 : 0
 
   metadata {
     name      = "cwagentconfig"
@@ -178,7 +175,7 @@ resource "kubernetes_config_map" "cwagentconfig" {
 }
 
 resource "helm_release" "cloudwatch_agent" {
-  count = var.enable_container_insights ? 1 : 0
+  count = var.enable_helm && var.enable_container_insights ? 1 : 0
 
   name       = "cloudwatch-agent"
   repository = "https://aws.github.io/eks-charts"

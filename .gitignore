@@ -15,7 +15,10 @@ terraform.rc
 !envs/*/terraform.tfvars.example
 !envs/*/terraform.tfvars.json.example
 .docs/
-docs/
+docs_local/
+
+# Bootstrap local docs
+bootstrap/local_docs/
 
 # macOS
 .DS_Store

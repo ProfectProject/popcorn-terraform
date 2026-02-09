@@ -1,6 +1,17 @@
 # Production Environment RDS Configuration
 # Multi-AZ, 고가용성, 최저 스펙으로 비용 최적화
 
+# Local 값 정의
+locals {
+  name_prefix = "goorm-popcorn-prod"
+  environment = "prod"
+  common_tags = {
+    Environment = "prod"
+    Project     = "goorm-popcorn"
+    ManagedBy   = "terraform"
+  }
+}
+
 # Random password for RDS
 resource "random_password" "db_password" {
   length  = 16
@@ -63,8 +74,8 @@ module "rds" {
   instance_class = "db.t4g.micro" # 최저 스펙 (Dev와 동일)
 
   # Storage Configuration
-  allocated_storage     = 20   # 최소 스토리지
-  max_allocated_storage = 200  # 자동 확장 한도 증가
+  allocated_storage     = 20  # 최소 스토리지
+  max_allocated_storage = 200 # 자동 확장 한도 증가
   storage_type          = "gp3"
   storage_encrypted     = true
 
@@ -74,7 +85,7 @@ module "rds" {
   master_password = random_password.db_password.result
 
   # Network Configuration
-  subnet_ids             = module.vpc.database_subnet_ids
+  subnet_ids             = values(module.vpc.data_subnet_ids)
   vpc_security_group_ids = [aws_security_group.rds.id]
   publicly_accessible    = false
 
@@ -82,9 +93,9 @@ module "rds" {
   multi_az = true # 고가용성 확보
 
   # Backup Configuration (Prod: 강화된 백업)
-  backup_retention_period = 7 # 7일 보존
-  backup_window          = "03:00-04:00"
-  copy_tags_to_snapshot  = true
+  backup_retention_period  = 7 # 7일 보존
+  backup_window            = "03:00-04:00"
+  copy_tags_to_snapshot    = true
   delete_automated_backups = false # 자동 백업 보존
 
   # Maintenance Configuration
@@ -149,7 +160,7 @@ module "rds" {
 
   # CloudWatch Logs (전체 로그)
   enabled_cloudwatch_logs_exports = ["postgresql"]
-  cloudwatch_log_retention       = 7 # 7일 보존
+  cloudwatch_log_retention        = 7 # 7일 보존
 
   # Apply Changes (Prod: 유지보수 시간에 적용)
   apply_immediately = false
@@ -176,22 +187,13 @@ resource "aws_security_group" "rds" {
     security_groups = [module.eks.node_security_group_id]
   }
 
-  # PostgreSQL 접근 (Kafka에서 CDC용)
-  ingress {
-    description     = "PostgreSQL from Kafka"
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.kafka.id]
-  }
-
   # 관리용 접근 (VPC 내부만)
   ingress {
     description = "PostgreSQL from VPC"
     from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
-    cidr_blocks = [module.vpc.vpc_cidr_block]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   egress {

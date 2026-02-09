@@ -38,8 +38,8 @@ module "rds" {
   instance_class = "db.t4g.micro" # 최저 스펙
 
   # Storage Configuration
-  allocated_storage     = 20  # 최소 스토리지
-  max_allocated_storage = 50  # 자동 확장 제한
+  allocated_storage     = 20 # 최소 스토리지
+  max_allocated_storage = 50 # 자동 확장 제한
   storage_type          = "gp3"
   storage_encrypted     = true
 
@@ -58,9 +58,9 @@ module "rds" {
   availability_zone = data.aws_availability_zones.available.names[0] # ap-northeast-2a
 
   # Backup Configuration (Dev: 최소 백업)
-  backup_retention_period = 1 # 1일만 보존
-  backup_window          = "03:00-04:00"
-  copy_tags_to_snapshot  = true
+  backup_retention_period  = 1 # 1일만 보존
+  backup_window            = "03:00-04:00"
+  copy_tags_to_snapshot    = true
   delete_automated_backups = true
 
   # Maintenance Configuration
@@ -107,7 +107,7 @@ module "rds" {
 
   # CloudWatch Logs (최소화)
   enabled_cloudwatch_logs_exports = ["postgresql"]
-  cloudwatch_log_retention       = 3 # 3일만 보존
+  cloudwatch_log_retention        = 3 # 3일만 보존
 
   # Apply Changes (Dev: 즉시 적용)
   apply_immediately = true
@@ -130,19 +130,10 @@ resource "aws_security_group" "rds" {
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = [module.eks.node_security_group_id]
+    security_groups = var.enable_eks ? [module.eks[0].node_security_group_id] : []
   }
 
-  # PostgreSQL 접근 (Kafka에서 CDC용)
-  ingress {
-    description     = "PostgreSQL from Kafka"
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.kafka.id]
-  }
-
-  # 관리용 접근 (Bastion 또는 VPN)
+  # 관리용 접근 (VPC 내부)
   ingress {
     description = "PostgreSQL from management"
     from_port   = 5432
