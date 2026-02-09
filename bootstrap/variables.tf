@@ -1,8 +1,10 @@
-variable "project_name" {
-  type = string
+variable "bucket_name" {
+  description = "S3 백엔드 버킷 이름"
+  type        = string
 }
 
 variable "region" {
-  type    = string
-  default = "ap-northeast-2"
+  description = "AWS 리전"
+  type        = string
+  default     = "ap-northeast-2"
 }

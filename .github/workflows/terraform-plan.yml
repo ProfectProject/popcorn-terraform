@@ -3,8 +3,13 @@ name: terraform-plan
 on:
   pull_request:
     branches:
-      - develop
-      - main
+      - develop  # Dev 환경
+      - main     # Prod 환경
+
+# 동시 실행 방지 - 환경별로 하나의 plan만 실행
+concurrency:
+  group: terraform-plan-${{ github.base_ref == 'main' && 'prod' || 'dev' }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -31,7 +36,7 @@ jobs:
 
       - name: Prepare terraform.tfvars
         env:
-          TFVARS_CONTENT: ${{ github.ref_name == 'main' && secrets.TFVARS_PROD || secrets.TFVARS_DEV }}
+          TFVARS_CONTENT: ${{ github.base_ref == 'main' && secrets.TFVARS_PROD || secrets.TFVARS_DEV }}
         run: |
           set -euo pipefail
           if [[ -n "${TFVARS_CONTENT:-}" ]]; then

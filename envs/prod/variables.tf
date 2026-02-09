@@ -35,10 +35,6 @@ variable "data_subnets" {
   }))
 }
 
-variable "sg_name" {
-  type = string
-}
-
 variable "enable_nat" {
   type    = bool
   default = false
@@ -50,26 +46,54 @@ variable "single_nat_gateway" {
 }
 
 variable "enable_vpc_endpoints" {
-  type    = bool
-  default = false
+  description = "VPC Endpoints 활성화 여부"
+  type        = bool
+  default     = false
 }
 
-variable "alb_name" {
+# Public ALB 설정 (Frontend 서비스용)
+variable "public_alb_name" {
   type = string
 }
 
-variable "alb_target_group_name" {
+variable "public_alb_target_group_name" {
   type = string
 }
 
-variable "alb_target_group_port" {
+variable "public_alb_target_group_port" {
   type    = number
   default = 8080
 }
 
-variable "alb_health_check_path" {
+variable "public_alb_health_check_path" {
   type    = string
   default = "/actuator/health"
+}
+
+# Management ALB 설정 (Kafka, ArgoCD, Grafana용)
+variable "management_alb_name" {
+  type = string
+}
+
+variable "management_alb_target_group_name" {
+  type = string
+}
+
+variable "management_alb_target_group_port" {
+  type    = number
+  default = 8080
+}
+
+variable "management_alb_health_check_path" {
+  type    = string
+  default = "/health"
+}
+
+# Management ALB 화이트리스트 IP
+variable "whitelist_ips" {
+  description = "Management ALB 접근 허용 IP 목록 (CIDR 형식)"
+  type        = list(string)
+  default     = []
 }
 
 variable "elasticache_name" {
@@ -107,29 +131,39 @@ variable "iam_name" {
   type = string
 }
 
-# Aurora 관련 변수
-variable "aurora_name" {
+# EKS 관련 변수
+variable "eks_name" {
   type = string
 }
 
-variable "aurora_instance_class" {
+variable "eks_cluster_version" {
   type    = string
-  default = "db.r6g.large"
+  default = "1.35"
 }
 
-variable "aurora_backup_retention_period" {
+variable "eks_node_instance_types" {
+  type    = list(string)
+  default = ["t3.medium", "t3.large"]
+}
+
+variable "eks_node_capacity_type" {
+  type    = string
+  default = "ON_DEMAND"
+}
+
+variable "eks_node_min_size" {
   type    = number
-  default = 7
+  default = 3
 }
 
-variable "aurora_preferred_backup_window" {
-  type    = string
-  default = "03:00-04:00"
+variable "eks_node_max_size" {
+  type    = number
+  default = 20
 }
 
-# ECS 관련 변수
-variable "ecs_name" {
-  type = string
+variable "eks_node_desired_size" {
+  type    = number
+  default = 6
 }
 
 variable "ecr_repository_url" {
@@ -148,38 +182,29 @@ variable "image_tag" {
   default     = "latest"
 }
 
-variable "ecs_log_retention_days" {
-  type    = number
-  default = 30
-}
-
-# CloudMap 관련 변수
-variable "cloudmap_name" {
+# RDS 관련 변수
+variable "rds_name" {
   type = string
 }
 
-variable "cloudmap_namespace" {
+variable "rds_instance_class" {
   type    = string
-  default = "goormpopcorn.local"
+  default = "db.t4g.small"
 }
 
-# EC2 Kafka 관련 변수
-variable "ec2_kafka_name" {
-  type = string
-}
-
-variable "ec2_kafka_instance_type" {
-  type    = string
-  default = "t3.medium"
-}
-
-variable "ec2_kafka_key_name" {
-  type = string
-}
-
-variable "ec2_kafka_node_count" {
+variable "rds_allocated_storage" {
   type    = number
-  default = 3
+  default = 100
+}
+
+variable "rds_backup_retention_period" {
+  type    = number
+  default = 7
+}
+
+variable "rds_engine_version" {
+  type    = string
+  default = "18.1"
 }
 
 # 공통 태그

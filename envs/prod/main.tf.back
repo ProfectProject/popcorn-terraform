@@ -1,0 +1,189 @@
+provider "aws" {
+  region = var.region
+}
+
+# Global Route53 & ACM 상태 참조
+data "terraform_remote_state" "global_route53_acm" {
+  backend = "s3"
+
+  config = {
+    bucket = "goorm-popcorn-tfstate"
+    key    = "global/route53-acm/terraform.tfstate"
+    region = var.region
+  }
+}
+
+# Global ECR 상태 참조
+data "terraform_remote_state" "global_ecr" {
+  backend = "s3"
+
+  config = {
+    bucket = "goorm-popcorn-tfstate"
+    key    = "global/ecr/terraform.tfstate"
+    region = var.region
+  }
+}
+
+module "vpc" {
+  source = "../../modules/vpc"
+
+  name               = var.vpc_name
+  cidr               = var.vpc_cidr
+  public_subnets     = var.public_subnets
+  private_subnets    = var.private_subnets
+  data_subnets       = var.data_subnets
+  enable_nat         = var.enable_nat
+  single_nat_gateway = var.single_nat_gateway
+}
+
+module "security_groups" {
+  source = "../../modules/security-groups"
+  name   = var.sg_name
+  vpc_id = module.vpc.vpc_id
+}
+
+module "alb" {
+  source = "../../modules/alb"
+
+  name                = var.alb_name
+  vpc_id              = module.vpc.vpc_id
+  subnet_ids          = values(module.vpc.public_subnet_ids)
+  security_group_ids  = [module.security_groups.alb_sg_id]
+  internal            = false
+  certificate_arn     = data.terraform_remote_state.global_route53_acm.outputs.certificate_arn
+  target_group_name   = var.alb_target_group_name
+  target_group_port   = var.alb_target_group_port
+  health_check_path   = var.alb_health_check_path
+  
+  tags = var.tags
+}
+
+# Route53 레코드 - 메인 도메인 및 서브도메인
+resource "aws_route53_record" "main" {
+  zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
+  name    = "goormpopcorn.shop"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "api" {
+  zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
+  name    = "api.goormpopcorn.shop"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "kafka" {
+  zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
+  name    = "kafka.goormpopcorn.shop"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "argocd" {
+  zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
+  name    = "argocd.goormpopcorn.shop"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "grafana" {
+  zone_id = data.terraform_remote_state.global_route53_acm.outputs.zone_id
+  name    = "grafana.goormpopcorn.shop"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+module "elasticache" {
+  source = "../../modules/elasticache"
+
+  name                       = var.elasticache_name
+  subnet_ids                 = values(module.vpc.data_subnet_ids)
+  security_group_id          = module.security_groups.cache_sg_id
+  node_type                  = var.elasticache_node_type
+  engine_version             = var.elasticache_engine_version
+  num_cache_clusters         = var.elasticache_num_cache_clusters
+  automatic_failover_enabled = var.elasticache_automatic_failover
+  multi_az_enabled           = var.elasticache_multi_az_enabled
+
+  # Prod 환경 보안 및 백업 설정
+  transit_encryption_enabled = true  # 프로덕션에서는 보안 우선
+  apply_immediately          = false # 유지보수 창에서 적용
+  snapshot_retention_limit   = 7     # 7일 백업 보존
+  snapshot_window            = "02:00-04:00"
+  maintenance_window         = "sun:04:00-sun:06:00"
+
+  tags = var.tags
+}
+
+# IAM 역할 모듈
+module "iam" {
+  source = "../../modules/iam"
+
+  name        = var.iam_name
+  environment = "prod"
+  region      = var.region
+
+  # EKS 관련 IAM 역할 추가
+  enable_eks_roles = true
+
+  tags = var.tags
+}
+
+# EKS 클러스터 모듈
+module "eks" {
+  source = "../../modules/eks"
+
+  name        = var.eks_name
+  environment = "prod"
+  region      = var.region
+  vpc_id      = module.vpc.vpc_id
+
+  # 네트워크 설정
+  subnet_ids               = values(module.vpc.private_subnet_ids)
+  control_plane_subnet_ids = values(module.vpc.public_subnet_ids)
+
+  # 노드 그룹 설정
+  node_group_instance_types = var.eks_node_instance_types
+  node_group_capacity_type  = var.eks_node_capacity_type
+  node_group_min_size       = var.eks_node_min_size
+  node_group_max_size       = var.eks_node_max_size
+  node_group_desired_size   = var.eks_node_desired_size
+
+  # Kubernetes 버전
+  cluster_version = var.eks_cluster_version
+
+  # Add-ons 설정
+  enable_aws_load_balancer_controller = true
+  enable_karpenter                    = true
+  enable_ebs_csi_driver               = true
+
+  tags = var.tags
+}
+
+# RDS 설정은 rds.tf 파일에서 관리됩니다
