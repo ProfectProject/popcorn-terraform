@@ -1,3 +1,4 @@
+# Terraform
 .terraform/
 *.tfstate
 *.tfstate.*
@@ -10,17 +11,53 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
+
+# Terraform variables (민감 정보)
 *.tfvars
 *.tfvars.json
 !envs/*/terraform.tfvars.example
 !envs/*/terraform.tfvars.json.example
+
+# Terraform backend files (로컬 백업)
+*.tfstate.backup
+*.tfstate.*.backup
+backend.tfplan
+
+# 문서 (로컬 전용)
 .docs/
-docs_local/
+local_docs/
 
 # Bootstrap local docs
 bootstrap/local_docs/
+
+# Kiro (IDE 관련)
+.kiro/
+
+# 스크립트 실행 결과 및 로그
+*.log
+*.log.*
+scripts/*.log
+scripts/output/
+scripts/temp/
 
 # macOS
 .DS_Store
 */.DS_Store
 **/.DS_Store
+
+# 백업 파일
+*.back
+*.backup
+*.bak
+*.old
+*.orig
+
+# 임시 파일
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# 환경별 백업
+envs/*.backup/
+envs/*/.backup/
