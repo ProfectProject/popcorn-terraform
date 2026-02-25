@@ -1,4 +1,5 @@
-# Helm Charts and Kubernetes Resources for EKS
+# Helm Charts for EKS
+# 설계 문서: .kiro/specs/terraform-infrastructure-refactoring/design.md
 
 # AWS Load Balancer Controller
 resource "helm_release" "aws_load_balancer_controller" {
@@ -9,6 +10,12 @@ resource "helm_release" "aws_load_balancer_controller" {
   chart      = "aws-load-balancer-controller"
   namespace  = "kube-system"
   version    = "1.8.1"
+
+  # 타임아웃 및 재시도 설정
+  timeout         = 600
+  wait            = true
+  atomic          = true
+  cleanup_on_fail = true
 
   set {
     name  = "clusterName"
@@ -45,59 +52,165 @@ resource "helm_release" "aws_load_balancer_controller" {
   ]
 }
 
-# Cluster Autoscaler
-resource "helm_release" "cluster_autoscaler" {
-  count = var.enable_helm && var.enable_cluster_autoscaler ? 1 : 0
+# Karpenter
+resource "helm_release" "karpenter" {
+  count = var.enable_helm && var.enable_karpenter ? 1 : 0
 
-  name       = "cluster-autoscaler"
-  repository = "https://kubernetes.github.io/autoscaler"
-  chart      = "cluster-autoscaler"
-  namespace  = "kube-system"
-  version    = "9.37.0"
+  name       = "karpenter"
+  repository = "oci://public.ecr.aws/karpenter"
+  chart      = "karpenter"
+  namespace  = "karpenter"
+  version    = "1.9.0"
+
+  create_namespace = true
+
+  # 타임아웃 및 재시도 설정
+  timeout         = 600
+  wait            = true
+  atomic          = true
+  cleanup_on_fail = true
 
   set {
-    name  = "autoDiscovery.clusterName"
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = aws_iam_role.karpenter[0].arn
+  }
+
+  set {
+    name  = "settings.clusterName"
     value = aws_eks_cluster.main.name
   }
 
   set {
-    name  = "awsRegion"
-    value = data.aws_region.current.name
+    name  = "settings.clusterEndpoint"
+    value = aws_eks_cluster.main.endpoint
   }
 
   set {
-    name  = "rbac.serviceAccount.create"
+    name  = "settings.eksControlPlane"
     value = "true"
   }
 
   set {
-    name  = "rbac.serviceAccount.name"
-    value = "cluster-autoscaler"
+    name  = "settings.interruptionQueue"
+    value = aws_sqs_queue.karpenter[0].name
   }
 
-  set {
-    name  = "rbac.serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = aws_iam_role.cluster_autoscaler[0].arn
-  }
-
-  set {
-    name  = "extraArgs.scale-down-delay-after-add"
-    value = "10m"
-  }
-
-  set {
-    name  = "extraArgs.scale-down-unneeded-time"
-    value = "10m"
-  }
-
-  set {
-    name  = "extraArgs.skip-nodes-with-local-storage"
-    value = "false"
-  }
+  # 운영 환경에서 Karpenter가 Karpenter 노드풀 노드에만 생성된 라벨(karpenter.sh/nodepool)이
+  # 붙는 상태에서 기본 nodeAffinity(DoesNotExist)가 계속 남아 스케줄 실패가 반복되는 것을 방지한다.
+  values = [
+    yamlencode({
+      affinity = {
+        nodeAffinity = {}
+      }
+    })
+  ]
 
   depends_on = [
     aws_eks_node_group.main,
+    aws_sqs_queue.karpenter,
+    aws_cloudwatch_event_rule.karpenter_spot_interruption,
   ]
+}
+
+# SQS Queue for Karpenter (Spot Interruption)
+resource "aws_sqs_queue" "karpenter" {
+  count = var.enable_karpenter ? 1 : 0
+
+  name                      = "karpenter-${aws_eks_cluster.main.name}"
+  message_retention_seconds = 300
+  sqs_managed_sse_enabled   = true
+
+  tags = var.tags
+}
+
+resource "aws_sqs_queue_policy" "karpenter" {
+  count = var.enable_karpenter ? 1 : 0
+
+  queue_url = aws_sqs_queue.karpenter[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "events.amazonaws.com"
+        }
+        Action   = "sqs:SendMessage"
+        Resource = aws_sqs_queue.karpenter[0].arn
+      }
+    ]
+  })
+}
+
+# EventBridge Rules for Karpenter
+resource "aws_cloudwatch_event_rule" "karpenter_spot_interruption" {
+  count = var.enable_karpenter ? 1 : 0
+
+  name        = "karpenter-spot-interruption-${aws_eks_cluster.main.name}"
+  description = "Spot instance interruption warning"
+
+  event_pattern = jsonencode({
+    source      = ["aws.ec2"]
+    detail-type = ["EC2 Spot Instance Interruption Warning"]
+  })
+
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_event_target" "karpenter_spot_interruption" {
+  count = var.enable_karpenter ? 1 : 0
+
+  rule      = aws_cloudwatch_event_rule.karpenter_spot_interruption[0].name
+  target_id = "KarpenterQueue"
+  arn       = aws_sqs_queue.karpenter[0].arn
+}
+
+resource "aws_cloudwatch_event_rule" "karpenter_scheduled_change" {
+  count = var.enable_karpenter ? 1 : 0
+
+  name        = "karpenter-scheduled-change-${aws_eks_cluster.main.name}"
+  description = "EC2 scheduled maintenance"
+
+  event_pattern = jsonencode({
+    source      = ["aws.health"]
+    detail-type = ["AWS Health Event"]
+  })
+
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_event_target" "karpenter_scheduled_change" {
+  count = var.enable_karpenter ? 1 : 0
+
+  rule      = aws_cloudwatch_event_rule.karpenter_scheduled_change[0].name
+  target_id = "KarpenterQueue"
+  arn       = aws_sqs_queue.karpenter[0].arn
+}
+
+resource "aws_cloudwatch_event_rule" "karpenter_instance_state_change" {
+  count = var.enable_karpenter ? 1 : 0
+
+  name        = "karpenter-instance-state-change-${aws_eks_cluster.main.name}"
+  description = "EC2 instance state change"
+
+  event_pattern = jsonencode({
+    source      = ["aws.ec2"]
+    detail-type = ["EC2 Instance State-change Notification"]
+    detail = {
+      state = ["terminated", "stopping", "stopped"]
+    }
+  })
+
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_event_target" "karpenter_instance_state_change" {
+  count = var.enable_karpenter ? 1 : 0
+
+  rule      = aws_cloudwatch_event_rule.karpenter_instance_state_change[0].name
+  target_id = "KarpenterQueue"
+  arn       = aws_sqs_queue.karpenter[0].arn
 }
 
 # Metrics Server
@@ -110,87 +223,24 @@ resource "helm_release" "metrics_server" {
   namespace  = "kube-system"
   version    = "3.12.1"
 
-  set {
-    name  = "args[0]"
-    value = "--cert-dir=/tmp"
-  }
+  # 타임아웃 및 재시도 설정
+  timeout         = 600
+  wait            = true
+  atomic          = true
+  cleanup_on_fail = true
 
-  set {
-    name  = "args[1]"
-    value = "--secure-port=4443"
-  }
-
-  set {
-    name  = "args[2]"
-    value = "--kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname"
-  }
-
-  set {
-    name  = "args[3]"
-    value = "--kubelet-use-node-status-port"
+  set_list {
+    name = "args"
+    value = [
+      "--cert-dir=/tmp",
+      "--secure-port=4443",
+      "--kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname",
+      "--kubelet-use-node-status-port"
+    ]
   }
 
   depends_on = [
     aws_eks_node_group.main,
-  ]
-}
-
-# CloudWatch Container Insights
-resource "kubernetes_namespace" "amazon_cloudwatch" {
-  count = var.enable_helm && var.enable_container_insights ? 1 : 0
-
-  metadata {
-    name = "amazon-cloudwatch"
-    labels = {
-      name = "amazon-cloudwatch"
-    }
-  }
-
-  depends_on = [aws_eks_cluster.main]
-}
-
-resource "kubernetes_config_map" "cwagentconfig" {
-  count = var.enable_helm && var.enable_container_insights ? 1 : 0
-
-  metadata {
-    name      = "cwagentconfig"
-    namespace = kubernetes_namespace.amazon_cloudwatch[0].metadata[0].name
-  }
-
-  data = {
-    "cwagentconfig.json" = jsonencode({
-      logs = {
-        metrics_collected = {
-          kubernetes = {
-            cluster_name = aws_eks_cluster.main.name
-            metrics_collection_interval = 60
-          }
-        }
-        force_flush_interval = 5
-      }
-    })
-  }
-
-  depends_on = [kubernetes_namespace.amazon_cloudwatch]
-}
-
-resource "helm_release" "cloudwatch_agent" {
-  count = var.enable_helm && var.enable_container_insights ? 1 : 0
-
-  name       = "cloudwatch-agent"
-  repository = "https://aws.github.io/eks-charts"
-  chart      = "aws-cloudwatch-metrics"
-  namespace  = kubernetes_namespace.amazon_cloudwatch[0].metadata[0].name
-  version    = "0.0.11"
-
-  set {
-    name  = "clusterName"
-    value = aws_eks_cluster.main.name
-  }
-
-  depends_on = [
-    aws_eks_node_group.main,
-    kubernetes_config_map.cwagentconfig,
   ]
 }
 

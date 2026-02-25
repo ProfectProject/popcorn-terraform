@@ -75,6 +75,11 @@ output "karpenter_role_arn" {
   value       = var.enable_karpenter ? aws_iam_role.karpenter[0].arn : null
 }
 
+output "external_secrets_role_arn" {
+  description = "IAM role ARN for External Secrets Operator"
+  value       = var.enable_external_secrets ? aws_iam_role.external_secrets[0].arn : null
+}
+
 output "security_group_id" {
   description = "ID of the cluster security group"
   value       = aws_security_group.cluster.id

@@ -173,6 +173,12 @@ variable "rds_engine_version" {
   default     = "16.1"
 }
 
+variable "rds_parameter_group_family" {
+  description = "RDS Parameter Group Family"
+  type        = string
+  default     = "postgres16"
+}
+
 variable "rds_multi_az" {
   description = "Multi-AZ 활성화 여부"
   type        = bool
@@ -249,6 +255,13 @@ variable "eks_node_desired_size" {
   description = "EKS 노드 희망 크기"
   type        = number
   default     = 2 # Dev: 2개
+}
+
+# EKS Add-ons 변수
+variable "enable_karpenter" {
+  description = "Karpenter 활성화 여부"
+  type        = bool
+  default     = true # Dev: Spot 인터럽션 처리를 위해 활성화
 }
 
 # 공통 태그

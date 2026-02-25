@@ -1,4 +1,10 @@
 # ALB 리소스 정의
+locals {
+  resolved_access_logs_bucket = var.enable_access_logs ? (
+    trimspace(var.access_logs_bucket) != "" ? trimspace(var.access_logs_bucket) : aws_s3_bucket.alb_logs.bucket
+  ) : ""
+}
+
 resource "aws_lb" "this" {
   name               = var.name
   load_balancer_type = "application"
@@ -7,14 +13,11 @@ resource "aws_lb" "this" {
   subnets         = var.subnet_ids
   security_groups = var.security_group_ids
 
-  # 액세스 로그 설정 (선택적)
-  dynamic "access_logs" {
-    for_each = var.enable_access_logs ? [1] : []
-    content {
-      bucket  = var.access_logs_bucket
-      prefix  = var.access_logs_prefix
-      enabled = true
-    }
+  # 액세스 로그 설정 (조건부)
+  access_logs {
+    bucket  = local.resolved_access_logs_bucket
+    prefix  = var.enable_access_logs ? var.access_logs_prefix : ""
+    enabled = var.enable_access_logs
   }
 
   tags = var.tags

@@ -28,9 +28,9 @@ resource "aws_security_group_rule" "rds_ingress" {
   security_group_id        = aws_security_group.rds[0].id
 }
 
-# VPC CIDR 접근 (관리용)
+# VPC CIDR 접근 (관리용) - vpc_cidr_block이 제공된 경우에만
 resource "aws_security_group_rule" "rds_ingress_vpc" {
-  count = var.create_security_group && var.allow_vpc_cidr ? 1 : 0
+  count = var.create_security_group && var.allow_vpc_cidr && var.vpc_cidr_block != null ? 1 : 0
 
   type              = "ingress"
   from_port         = var.database_port

@@ -16,7 +16,7 @@ locals {
 
 resource "aws_security_group" "public_alb" {
   name        = "popcorn-${var.environment}-public-alb-sg"
-  description = "Public ALB 보안 그룹 - 외부 사용자 접근용 (Frontend)"
+  description = "Public ALB security group for external user access (Frontend)"
   vpc_id      = var.vpc_id
 
   tags = merge(
@@ -67,7 +67,7 @@ resource "aws_security_group_rule" "public_alb_egress_all" {
 
 resource "aws_security_group" "management_alb" {
   name        = "popcorn-${var.environment}-management-alb-sg"
-  description = "Management ALB 보안 그룹 - 관리 도구 접근용 (Kafka, ArgoCD, Grafana)"
+  description = "Management ALB security group for admin tools (Kafka, ArgoCD, Grafana)"
   vpc_id      = var.vpc_id
 
   tags = merge(
@@ -147,7 +147,7 @@ resource "aws_security_group_rule" "eks_node_ingress_from_management_alb" {
 
 resource "aws_security_group" "rds" {
   name        = "popcorn-${var.environment}-rds-sg"
-  description = "RDS PostgreSQL 보안 그룹 - EKS Node에서만 접근 허용"
+  description = "RDS PostgreSQL security group - EKS Node access only"
   vpc_id      = var.vpc_id
 
   tags = merge(
@@ -179,7 +179,7 @@ resource "aws_security_group_rule" "rds_ingress_from_eks" {
 
 resource "aws_security_group" "elasticache" {
   name        = "popcorn-${var.environment}-elasticache-sg"
-  description = "ElastiCache Valkey 보안 그룹 - EKS Node에서만 접근 허용"
+  description = "ElastiCache Valkey security group - EKS Node access only"
   vpc_id      = var.vpc_id
 
   tags = merge(

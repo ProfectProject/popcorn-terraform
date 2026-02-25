@@ -92,7 +92,7 @@ variable "enable_access_logs" {
 variable "access_logs_bucket" {
   description = "ALB 액세스 로그를 저장할 S3 버킷"
   type        = string
-  default     = null
+  default     = ""
 }
 
 variable "access_logs_prefix" {

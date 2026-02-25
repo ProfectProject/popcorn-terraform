@@ -166,6 +166,13 @@ variable "eks_node_desired_size" {
   default = 6
 }
 
+# EKS Add-ons 변수
+variable "enable_karpenter" {
+  description = "Karpenter 활성화 여부"
+  type        = bool
+  default     = true # Prod: 오토스케일링 워크로드는 Karpenter로 Spot 우선 사용
+}
+
 variable "ecr_repository_url" {
   type = string
 }

@@ -27,13 +27,14 @@ data "terraform_remote_state" "global_ecr" {
 module "vpc" {
   source = "../../modules/vpc"
 
-  name               = var.vpc_name
-  cidr               = var.vpc_cidr
-  public_subnets     = var.public_subnets
-  private_subnets    = var.private_subnets
-  data_subnets       = var.data_subnets
-  enable_nat         = var.enable_nat
-  single_nat_gateway = var.single_nat_gateway
+  name                 = var.vpc_name
+  cidr                 = var.vpc_cidr
+  eks_cluster_name     = var.eks_name
+  public_subnets       = var.public_subnets
+  private_subnets      = var.private_subnets
+  data_subnets         = var.data_subnets
+  enable_nat           = var.enable_nat
+  single_nat_gateway   = var.single_nat_gateway
   enable_vpc_endpoints = var.enable_vpc_endpoints
 }
 
@@ -254,7 +255,7 @@ module "eks" {
 
   # Add-ons 설정
   enable_aws_load_balancer_controller = true
-  enable_karpenter                    = true
+  enable_karpenter                    = var.enable_karpenter # 오토스케일링 워크로드는 Karpenter로 Spot 우선 사용
   enable_ebs_csi_driver               = true
 
   tags = var.tags

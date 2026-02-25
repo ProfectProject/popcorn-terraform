@@ -50,6 +50,13 @@ variable "enable_vpc_endpoints" {
   type        = bool
   default     = false
 }
+
+variable "eks_cluster_name" {
+  description = "EKS 클러스터 이름 (kubernetes.io/cluster 태그용)"
+  type        = string
+  default     = ""
+}
+
 # VPC Flow Logs 관련 변수
 variable "enable_flow_logs" {
   description = "Enable VPC Flow Logs"

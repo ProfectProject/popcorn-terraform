@@ -40,4 +40,11 @@ resource "aws_elasticache_replication_group" "this" {
     Name   = var.name
     Engine = "valkey"
   })
+  
+  lifecycle {
+    ignore_changes = [
+      apply_immediately,
+      auth_token_update_strategy
+    ]
+  }
 }

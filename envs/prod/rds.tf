@@ -70,7 +70,7 @@ module "rds" {
 
   # Engine Configuration
   engine         = "postgres"
-  engine_version = "16.4"
+  engine_version = "18.1"
   instance_class = "db.t4g.micro" # 최저 스펙 (Dev와 동일)
 
   # Storage Configuration
@@ -89,6 +89,11 @@ module "rds" {
   vpc_security_group_ids = [aws_security_group.rds.id]
   publicly_accessible    = false
 
+  # Security Group Configuration (모듈 내부 생성 비활성화)
+  create_security_group = false
+  vpc_id                = module.vpc.vpc_id
+  vpc_cidr_block        = var.vpc_cidr
+
   # High Availability Configuration (Prod: Multi-AZ)
   multi_az = true # 고가용성 확보
 
@@ -102,53 +107,13 @@ module "rds" {
   maintenance_window         = "sun:04:00-sun:05:00"
   auto_minor_version_upgrade = true
 
-  # Parameter Configuration (프로덕션 환경 최적화)
-  db_parameters = [
-    {
-      name  = "shared_preload_libraries"
-      value = "pg_stat_statements"
-    },
-    {
-      name  = "log_statement"
-      value = "mod" # DML 로깅
-    },
-    {
-      name  = "log_min_duration_statement"
-      value = "1000" # 1초 이상 쿼리 로깅
-    },
-    {
-      name  = "log_connections"
-      value = "1" # 연결 로그 활성화
-    },
-    {
-      name  = "log_disconnections"
-      value = "1" # 연결 해제 로그 활성화
-    },
-    {
-      name  = "max_connections"
-      value = "200" # 연결 수 증가
-    },
-    {
-      name  = "shared_buffers"
-      value = "{DBInstanceClassMemory/32768}" # 메모리 최적화
-    },
-    {
-      name  = "effective_cache_size"
-      value = "{DBInstanceClassMemory*3/4/8192}" # 캐시 최적화
-    },
-    {
-      name  = "checkpoint_completion_target"
-      value = "0.9" # 체크포인트 최적화
-    },
-    {
-      name  = "wal_buffers"
-      value = "16MB" # WAL 버퍼 최적화
-    }
-  ]
+  # Parameter Configuration (기본값 사용)
+  db_parameters = []
 
   # Monitoring Configuration (Enhanced Monitoring 활성화)
-  monitoring_interval = 60 # 1분 간격
-  monitoring_role_arn = aws_iam_role.rds_enhanced_monitoring.arn
+  monitoring_interval    = 60 # 1분 간격
+  monitoring_role_arn    = aws_iam_role.rds_enhanced_monitoring.arn
+  create_monitoring_role = false # 외부에서 생성
 
   # Performance Insights (활성화)
   performance_insights_enabled          = true

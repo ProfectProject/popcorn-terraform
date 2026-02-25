@@ -102,6 +102,12 @@ variable "enable_container_insights" {
   default     = true
 }
 
+variable "enable_external_secrets" {
+  description = "Enable External Secrets Operator IRSA role"
+  type        = bool
+  default     = true
+}
+
 variable "enable_helm" {
   description = "Helm 설치 여부 (모든 Helm 차트 설치를 제어하는 마스터 스위치)"
   type        = bool

@@ -32,6 +32,7 @@ resource "aws_db_parameter_group" "main" {
     content {
       name  = parameter.value.name
       value = parameter.value.value
+      # apply_method는 지정하지 않음 (AWS가 자동으로 결정)
     }
   }
 
@@ -94,7 +95,7 @@ resource "aws_db_instance" "main" {
   # Database Configuration
   db_name  = var.database_name
   username = var.master_username
-  password = var.master_password
+  password = var.create_random_password ? random_password.db_password[0].result : var.master_password
   port     = var.database_port
   
   # Network Configuration
@@ -122,7 +123,7 @@ resource "aws_db_instance" "main" {
   
   # Monitoring Configuration
   monitoring_interval = var.monitoring_interval
-  monitoring_role_arn = var.monitoring_interval > 0 ? var.monitoring_role_arn : null
+  monitoring_role_arn = var.create_monitoring_role && var.monitoring_interval > 0 ? aws_iam_role.rds_enhanced_monitoring[0].arn : var.monitoring_role_arn
   
   # Performance Insights
   performance_insights_enabled          = var.performance_insights_enabled
@@ -159,7 +160,6 @@ resource "aws_cloudwatch_log_group" "postgresql" {
 
   name              = "/aws/rds/instance/${var.identifier}/${each.value}"
   retention_in_days = var.cloudwatch_log_retention
-  kms_key_id        = var.kms_key_id != null ? var.kms_key_id : aws_kms_key.rds[0].arn
 
   tags = merge(var.tags, {
     Name = "${var.identifier}-${each.value}-logs"

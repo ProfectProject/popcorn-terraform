@@ -60,7 +60,7 @@ resource "aws_eks_node_group" "main" {
 
   capacity_type  = var.node_group_capacity_type
   instance_types = var.node_group_instance_types
-  ami_type       = "AL2_x86_64"
+  ami_type       = "AL2023_x86_64_STANDARD"
   disk_size      = 20
 
   scaling_config {
@@ -146,7 +146,6 @@ resource "aws_kms_alias" "eks" {
 resource "aws_cloudwatch_log_group" "cluster" {
   name              = "/aws/eks/${var.name}/cluster"
   retention_in_days = var.cloudwatch_log_retention
-  kms_key_id        = aws_kms_key.eks.arn
 
   tags = merge(var.tags, {
     Name = "${var.name}-cluster-logs"

@@ -33,6 +33,18 @@ bootstrap/local_docs/
 
 # Kiro (IDE 관련)
 .kiro/
+.kiro/analysis/          # AI 분석 파일 (임시/분석 문서)
+.kiro/task-logs/         # 태스크 로그 (임시)
+
+# 임시 분석 파일
+**/temp-*.sh
+**/temp-*.md
+**/*-temp.*
+
+# 분석 보고서
+**/*-analysis-*.md
+**/*-review-*.md
+**/*-audit-*.md
 
 # 스크립트 및 배포 관련 (로컬 전용)
 scripts/

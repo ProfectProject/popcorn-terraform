@@ -3,6 +3,9 @@ locals {
   private_subnets = { for subnet in var.private_subnets : subnet.name => subnet }
   data_subnets    = { for subnet in var.data_subnets : subnet.name => subnet }
   base_tags       = merge({ Name = var.name }, var.tags)
+  cluster_tags    = trimspace(var.eks_cluster_name) != "" ? {
+    "kubernetes.io/cluster/${var.eks_cluster_name}" = "owned"
+  } : {}
   public_subnets_by_az = {
     for subnet in var.public_subnets :
     subnet.az => subnet
@@ -56,9 +59,10 @@ resource "aws_subnet" "public" {
   cidr_block              = each.value.cidr
   map_public_ip_on_launch = true
 
-  tags = merge(var.tags, {
-    Name = each.value.name
-    Tier = "public"
+  tags = merge(var.tags, local.cluster_tags, {
+    Name                     = each.value.name
+    Tier                     = "public"
+    "kubernetes.io/role/elb" = "1" # AWS Load Balancer Controller가 Public 서브넷 탐색에 사용
   })
 }
 
@@ -68,9 +72,10 @@ resource "aws_subnet" "private" {
   availability_zone = each.value.az
   cidr_block        = each.value.cidr
 
-  tags = merge(var.tags, {
-    Name = each.value.name
-    Tier = "private"
+  tags = merge(var.tags, local.cluster_tags, {
+    Name                              = each.value.name
+    Tier                              = "private"
+    "kubernetes.io/role/internal-elb" = "1" # AWS Load Balancer Controller가 Private 서브넷 탐색에 사용
   })
 }
 
@@ -80,7 +85,7 @@ resource "aws_subnet" "data" {
   availability_zone = each.value.az
   cidr_block        = each.value.cidr
 
-  tags = merge(var.tags, {
+  tags = merge(var.tags, local.cluster_tags, {
     Name = each.value.name
     Tier = "data"
   })

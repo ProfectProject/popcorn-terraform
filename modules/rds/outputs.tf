@@ -78,15 +78,32 @@ output "db_instance_class" {
 }
 
 # Connection Information
-output "db_connection_string" {
-  description = "PostgreSQL connection string"
-  value       = "postgresql://${aws_db_instance.main.username}:${var.master_password}@${aws_db_instance.main.endpoint}/${aws_db_instance.main.db_name}"
-  sensitive   = true
+# 보안 권장사항: 애플리케이션에서 Secrets Manager를 직접 사용하세요
+output "db_connection_info" {
+  description = "Database connection information (retrieve password from Secrets Manager)"
+  value = {
+    host                = aws_db_instance.main.address
+    port                = aws_db_instance.main.port
+    database            = aws_db_instance.main.db_name
+    username            = aws_db_instance.main.username
+    endpoint            = aws_db_instance.main.endpoint
+    # 비밀번호는 Secrets Manager에서 가져오세요
+    password_secret_arn = var.create_secrets_manager ? aws_secretsmanager_secret.db_password[0].arn : null
+    # 또는 random_password output 사용 (비권장)
+  }
+  sensitive = true
 }
 
 output "db_jdbc_url" {
-  description = "JDBC connection URL"
+  description = "JDBC connection URL (without credentials)"
   value       = "jdbc:postgresql://${aws_db_instance.main.endpoint}/${aws_db_instance.main.db_name}"
+}
+
+# 레거시 호환성을 위한 deprecated output (향후 제거 예정)
+output "db_connection_string" {
+  description = "[DEPRECATED] Use db_connection_info instead. PostgreSQL connection string"
+  value       = var.create_random_password ? "postgresql://${aws_db_instance.main.username}:<GET-FROM-SECRETS-MANAGER>@${aws_db_instance.main.endpoint}/${aws_db_instance.main.db_name}" : "postgresql://${aws_db_instance.main.username}:<USE-SECRETS-MANAGER>@${aws_db_instance.main.endpoint}/${aws_db_instance.main.db_name}"
+  sensitive   = true
 }
 
 # Subnet Group

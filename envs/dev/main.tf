@@ -30,6 +30,7 @@ module "vpc" {
 
   name               = var.vpc_name
   cidr               = var.vpc_cidr
+  eks_cluster_name   = var.eks_name
   public_subnets     = var.public_subnets
   private_subnets    = var.private_subnets
   data_subnets       = var.data_subnets
@@ -226,18 +227,25 @@ module "rds" {
   environment = "dev"
 
   # 데이터베이스 설정
-  engine_version    = var.rds_engine_version
-  instance_class    = var.rds_instance_class
-  allocated_storage = var.rds_allocated_storage
+  engine_version         = var.rds_engine_version
+  parameter_group_family = var.rds_parameter_group_family
+  instance_class         = var.rds_instance_class
+  allocated_storage      = var.rds_allocated_storage
 
   # 네트워크 설정
   subnet_ids             = values(module.vpc.data_subnet_ids)
   vpc_security_group_ids = [module.security_groups.rds_sg_id]
+  vpc_id                 = module.vpc.vpc_id
+  vpc_cidr_block         = var.vpc_cidr
 
   # 마스터 비밀번호 (Secrets Manager에서 자동 생성)
   create_random_password = true
   create_secrets_manager = true
-  master_password        = "" # 자동 생성되므로 빈 문자열
+  master_password        = null # random_password 사용 시 null 전달
+  
+  # 모니터링 설정
+  create_monitoring_role = true
+  monitoring_interval    = 60
 
   # 고가용성 설정
   multi_az = var.rds_multi_az
@@ -296,7 +304,7 @@ module "eks" {
 
   # Add-ons 설정
   enable_aws_load_balancer_controller = true
-  enable_karpenter                    = false # Dev에서는 비활성화 (비용 절감)
+  enable_karpenter                    = var.enable_karpenter # Spot 인터럽션 처리를 위해 활성화
   enable_ebs_csi_driver               = true
 
   tags = var.tags

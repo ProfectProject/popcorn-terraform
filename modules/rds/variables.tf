@@ -20,19 +20,19 @@ variable "engine" {
 variable "engine_version" {
   description = "The engine version to use"
   type        = string
-  default     = "16.4"
+  default     = "18.1"
 }
 
 variable "parameter_group_family" {
   description = "The DB parameter group family"
   type        = string
-  default     = "postgres16"
+  default     = "postgres18"
 }
 
 variable "major_engine_version" {
   description = "The major engine version for option group"
   type        = string
-  default     = "16"
+  default     = "18"
 }
 
 # Instance Configuration
@@ -93,9 +93,10 @@ variable "master_username" {
 }
 
 variable "master_password" {
-  description = "Password for the master DB user"
+  description = "Password for the master DB user (null if using random password)"
   type        = string
   sensitive   = true
+  default     = null
 }
 
 variable "database_port" {
@@ -191,14 +192,6 @@ variable "db_parameters" {
     {
       name  = "log_min_duration_statement"
       value = "1000"
-    },
-    {
-      name  = "log_connections"
-      value = "1"
-    },
-    {
-      name  = "log_disconnections"
-      value = "1"
     }
   ]
 }
