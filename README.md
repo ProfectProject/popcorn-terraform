@@ -294,4 +294,11 @@ aws rds describe-db-subnet-groups --db-subnet-group-name your-subnet-group
 ## 아키텍처 설계 문서
 
 - [인프라 설계서 (EKS 전환·ALB 분리·Kafka 선택·노드 전략)](docs/ARCHITECTURE.md)
-- [prod 인프라 아키텍처 다이어그램](docs/architecture/popcorn-prod-architecture.png)
+- [prod 인프라 아키텍처 다이어그램 (리소스 상세)](docs/architecture/popcorn-prod-architecture.png)
+
+![Popcorn 시스템 아키텍처](docs/architecture/popcorn-system-architecture.png)
+
+### Terraform CI/CD
+PR에서 plan 결과를 코멘트로 공유하고, 승인 후 merge하면 apply합니다. 상태는 S3, 잠금은 DynamoDB.
+
+![Terraform CI/CD](docs/architecture/terraform-cicd.png)
