@@ -291,3 +291,7 @@ aws rds describe-db-subnet-groups --db-subnet-group-name your-subnet-group
 ## 라이선스
 
 이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+## 아키텍처 설계 문서
+
+- [인프라 설계서 (EKS 전환·ALB 분리·Kafka 선택·노드 전략)](docs/ARCHITECTURE.md)
+- [prod 인프라 아키텍처 다이어그램](docs/architecture/popcorn-prod-architecture.png)
